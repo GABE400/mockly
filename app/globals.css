@@ -1,26 +1,73 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030303;
+  --foreground: #f5f5f7;
+  --foreground-pure: #ffffff;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --bg-card: rgba(255, 255, 255, 0.01);
+  --bg-card-hover: rgba(255, 255, 255, 0.03);
+  --bg-card-active: rgba(255, 255, 255, 0.05);
+  --bg-input: rgba(255, 255, 255, 0.02);
+  --bg-input-hover: rgba(255, 255, 255, 0.06);
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --text-semi-muted: rgba(255, 255, 255, 0.7);
+  --text-dim: rgba(255, 255, 255, 0.4);
+  --grid-line: rgba(255, 255, 255, 0.015);
+  --glow-blob-1: rgba(99, 102, 241, 0.15); /* Indigo */
+  --glow-blob-2: rgba(168, 85, 247, 0.05); /* Purple */
+  --glow-blob-3: rgba(59, 130, 246, 0.05);  /* Blue */
+  --header-bg: rgba(3, 3, 3, 0.4);
+  --header-bg-scrolled: rgba(0, 0, 0, 0.75);
 }
 
-@theme inline {
+.light {
+  --background: #fafafa;
+  --foreground: #09090b;
+  --foreground-pure: #000000;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --bg-card: rgba(0, 0, 0, 0.015);
+  --bg-card-hover: rgba(0, 0, 0, 0.03);
+  --bg-card-active: rgba(0, 0, 0, 0.05);
+  --bg-input: rgba(0, 0, 0, 0.02);
+  --bg-input-hover: rgba(0, 0, 0, 0.05);
+  --text-muted: rgba(9, 9, 11, 0.6);
+  --text-semi-muted: rgba(9, 9, 11, 0.7);
+  --text-dim: rgba(9, 9, 11, 0.4);
+  --grid-line: rgba(0, 0, 0, 0.04);
+  --glow-blob-1: rgba(99, 102, 241, 0.06); /* Soft Indigo */
+  --glow-blob-2: rgba(168, 85, 247, 0.03); /* Soft Purple */
+  --glow-blob-3: rgba(59, 130, 246, 0.03);  /* Soft Blue */
+  --header-bg: rgba(250, 250, 250, 0.4);
+  --header-bg-scrolled: rgba(255, 255, 255, 0.8);
+}
+
+@theme {
+  --font-sans: var(--font-dm-sans), sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-foreground-pure: var(--foreground-pure);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-medium: var(--border-medium);
+  --color-border-strong: var(--border-strong);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+  --color-bg-card-active: var(--bg-card-active);
+  --color-bg-input: var(--bg-input);
+  --color-bg-input-hover: var(--bg-input-hover);
+  --color-text-muted: var(--text-muted);
+  --color-text-semi-muted: var(--text-semi-muted);
+  --color-text-dim: var(--text-dim);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-dm-sans), sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+

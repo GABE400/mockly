@@ -1,0 +1,1132 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+
+const faqs = [
+  {
+    question: "How does Muckly automate the framing process?",
+    answer: "Muckly detects your screenshot's aspect ratio and instantly wraps it in a perfect vector outline of your chosen device. No heavy graphics software or manual alignment required."
+  },
+  {
+    question: "Can I export mockups with a transparent background?",
+    answer: "Absolutely! Choose the transparent preset in the background selector and Muckly will export a high-definition PNG with transparency, perfect for landing pages and graphic assets."
+  },
+  {
+    question: "What mobile and desktop frames are available?",
+    answer: "On the Free plan, you get access to standard iPhone and Android mobile frames. On the Pro plan, you unlock MacBook Pro, iPad Pro, Apple Watch, and several luxury studio presentation scenes."
+  },
+  {
+    question: "Is there a commercial license included with Pro?",
+    answer: "Yes, every mockup generated on a Pro account comes with an unrestricted commercial license. You can use your exports for App Store submittals, client presentations, ads, and templates."
+  }
+];
+
+export default function MarketingPage() {
+  // Theme state
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  // Navigation morphing state
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Playground customize states
+  const [device, setDevice] = useState<"iphone" | "pixel" | "macbook">("iphone");
+  const [gradient, setGradient] = useState<"sunset" | "aurora" | "midnight" | "transparent">("sunset");
+  const [isTilted, setIsTilted] = useState(true);
+
+  // FAQ Accordion states
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      if (savedTheme === "light") {
+        document.documentElement.classList.add("light");
+      } else {
+        document.documentElement.classList.remove("light");
+      }
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    if (nextTheme === "light") {
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
+
+  const transparentColor = theme === "dark" ? "#18181b" : "#e4e4e7";
+
+  return (
+    <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-foreground/10 selection:text-foreground-pure transition-colors duration-300">
+      
+      {/* Background Decorative Glow Blobs */}
+      <div 
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] max-w-[1000px] h-[500px] rounded-full blur-[120px] pointer-events-none z-0 transition-all duration-500" 
+        style={{
+          background: "radial-gradient(circle, var(--glow-blob-1) 0%, var(--glow-blob-2) 40%, transparent 80%)"
+        }}
+      />
+      <div 
+        className="absolute top-[35%] right-[-10%] w-[50vw] max-w-[600px] h-[600px] rounded-full blur-[140px] pointer-events-none z-0 transition-all duration-500" 
+        style={{
+          background: "radial-gradient(circle, var(--glow-blob-3) 0%, transparent 70%)"
+        }}
+      />
+      <div 
+        className="absolute bottom-[10%] left-[-10%] w-[50vw] max-w-[600px] h-[600px] rounded-full blur-[140px] pointer-events-none z-0 transition-all duration-500" 
+        style={{
+          background: "radial-gradient(circle, var(--glow-blob-2) 0%, transparent 70%)"
+        }}
+      />
+
+      {/* Subtle Grid Overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-0 transition-all duration-300" 
+        style={{
+          backgroundImage: `linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)`,
+          backgroundSize: "48px 48px"
+        }}
+      />
+
+      {/* Morphing Navigation Header */}
+      <header 
+        className={`z-50 transition-all duration-300 ease-in-out ${
+          isScrolled 
+            ? "fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl border border-border-medium bg-[var(--header-bg-scrolled)] backdrop-blur-md rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.15)] py-2.5 px-6" 
+            : "sticky top-0 w-full border-b border-border-subtle bg-[var(--header-bg)] backdrop-blur-md py-4 px-6 md:px-8"
+        }`}
+      >
+        <div className="mx-auto max-w-7xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Image 
+              src="/logo.png" 
+              alt="Muckly Logo" 
+              width={isScrolled ? 28 : 32} 
+              height={isScrolled ? 28 : 32} 
+              className="rounded-lg shadow-lg shadow-indigo-500/10 object-cover border border-border-subtle transition-all duration-300"
+            />
+            <span className="text-lg md:text-xl font-bold tracking-tight text-foreground-pure">
+              Muckly
+            </span>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-text-muted">
+            <a href="#features" className="hover:text-foreground-pure transition-colors duration-200">Features</a>
+            <a href="#playground" className="hover:text-foreground-pure transition-colors duration-200">Playground</a>
+            <a href="#pricing" className="hover:text-foreground-pure transition-colors duration-200">Pricing</a>
+            <a href="#faq" className="hover:text-foreground-pure transition-colors duration-200">FAQ</a>
+          </nav>
+
+          <div className="flex items-center gap-4">
+            
+            {/* Elegant Custom Theme Toggle Capsule */}
+            <button
+              onClick={toggleTheme}
+              className="w-8 h-8 rounded-full border border-border-subtle bg-bg-card hover:bg-bg-card-hover flex items-center justify-center text-text-muted hover:text-foreground-pure active:scale-95 transition-all duration-300 focus:outline-none cursor-pointer"
+              aria-label="Toggle Theme"
+            >
+              <div className="relative w-4 h-4 flex items-center justify-center">
+                {/* Sun Icon */}
+                <svg
+                  className={`w-4 h-4 absolute transition-all duration-500 ease-in-out ${
+                    theme === "light" 
+                      ? "rotate-0 scale-100 opacity-100" 
+                      : "rotate-90 scale-0 opacity-0"
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"
+                  />
+                </svg>
+                {/* Moon Icon */}
+                <svg
+                  className={`w-4 h-4 absolute transition-all duration-500 ease-in-out ${
+                    theme === "dark" 
+                      ? "rotate-0 scale-100 opacity-100" 
+                      : "-rotate-90 scale-0 opacity-0"
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                  />
+                </svg>
+              </div>
+            </button>
+
+            <a 
+              id="nav-login-btn"
+              href="/login" 
+              className="text-xs md:text-sm font-medium text-text-semi-muted hover:text-foreground-pure transition-colors duration-200 px-3 py-1.5"
+            >
+              Sign In
+            </a>
+            <a 
+              id="nav-signup-btn"
+              href="/signup" 
+              className="hidden sm:inline-flex items-center justify-center text-xs font-semibold bg-foreground text-background hover:opacity-90 active:scale-[0.98] transition-all duration-200 rounded-full px-4 py-2"
+            >
+              Get Started
+            </a>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Container */}
+      <main className="relative z-10 mx-auto max-w-7xl px-6 md:px-8 pt-10">
+        
+        {/* Hero Section */}
+        <section className="pt-20 pb-20 md:pt-28 md:pb-32 flex flex-col items-center text-center">
+          {/* Subtle Pill */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-border-medium bg-bg-card px-3.5 py-1 text-xs text-text-muted mb-6 backdrop-blur-sm animate-fade-in transition-all">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            <span>Now supporting iPhone 16 & Pixel 9 frames</span>
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground-pure max-w-4xl leading-[1.08] mb-6">
+            Your app mockups <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+              made easy
+            </span>
+          </h1>
+
+          <p className="text-lg md:text-xl text-text-muted max-w-2xl leading-relaxed mb-10">
+            Transform raw, dull mobile app emulator screenshots into premium, publication-ready device presentations in seconds. Elevate your App Store visuals, product launches, and developer portfolios.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-sm mb-20">
+            <a 
+              id="cta-get-started-free"
+              href="#pricing"
+              className="w-full sm:w-auto inline-flex items-center justify-center text-sm font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white rounded-full px-8 py-3.5 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200"
+            >
+              Get started free
+            </a>
+            <a 
+              id="cta-see-examples"
+              href="#playground"
+              className="w-full sm:w-auto inline-flex items-center justify-center text-sm font-semibold border border-border-medium bg-bg-card hover:bg-bg-card-hover text-foreground-pure rounded-full px-8 py-3.5 transition-all duration-200"
+            >
+              Interactive Demo
+            </a>
+          </div>
+
+          {/* Interactive Customizer Preview Playground */}
+          <div 
+            id="playground" 
+            className="w-full max-w-5xl rounded-3xl border border-border-subtle bg-bg-card backdrop-blur-sm shadow-2xl relative overflow-hidden flex flex-col lg:flex-row group"
+          >
+            {/* Top decorative glass effect bar */}
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-foreground/10 to-transparent z-10" />
+
+            {/* Glowing accent behind device frame */}
+            <div className="absolute top-1/2 left-1/2 lg:left-2/3 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[70%] bg-indigo-500/10 rounded-full blur-[90px] opacity-70 group-hover:opacity-90 transition-opacity duration-500 pointer-events-none" />
+
+            {/* Left Control Sidebar */}
+            <div className="flex flex-col gap-6 w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-border-subtle p-6 md:p-8 bg-foreground/[0.02] z-10 transition-colors">
+              <div>
+                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">Playground</span>
+                <h3 className="text-lg font-bold text-foreground-pure mb-4">Customize Mockup</h3>
+              </div>
+
+              {/* 1. Device Frame Selector */}
+              <div>
+                <h4 className="text-xs font-semibold text-text-dim uppercase tracking-wider mb-2.5">1. Select Device Frame</h4>
+                <div className="grid grid-cols-3 lg:grid-cols-1 gap-2">
+                  <button 
+                    onClick={() => setDevice("iphone")}
+                    className={`flex items-center justify-center lg:justify-start gap-2.5 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 cursor-pointer ${
+                      device === "iphone" 
+                        ? "bg-foreground text-background shadow-md font-bold" 
+                        : "bg-bg-card border border-border-subtle text-text-semi-muted hover:text-foreground-pure hover:bg-bg-card-hover"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    <span>iPhone 16 Pro</span>
+                  </button>
+                  <button 
+                    onClick={() => setDevice("pixel")}
+                    className={`flex items-center justify-center lg:justify-start gap-2.5 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 cursor-pointer ${
+                      device === "pixel" 
+                        ? "bg-foreground text-background shadow-md font-bold" 
+                        : "bg-bg-card border border-border-subtle text-text-semi-muted hover:text-foreground-pure hover:bg-bg-card-hover"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                    <span>Pixel 9 Pro</span>
+                  </button>
+                  <button 
+                    onClick={() => setDevice("macbook")}
+                    className={`flex items-center justify-center lg:justify-start gap-2.5 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 cursor-pointer ${
+                      device === "macbook" 
+                        ? "bg-foreground text-background shadow-md font-bold" 
+                        : "bg-bg-card border border-border-subtle text-text-semi-muted hover:text-foreground-pure hover:bg-bg-card-hover"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
+                    <span>MacBook Pro</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Background Selector */}
+              <div>
+                <h4 className="text-xs font-semibold text-text-dim uppercase tracking-wider mb-2.5">2. Choose Background</h4>
+                <div className="grid grid-cols-4 gap-2.5">
+                  <button 
+                    onClick={() => setGradient("sunset")}
+                    className={`w-full aspect-square rounded-xl bg-gradient-to-br from-pink-500 via-rose-500 to-indigo-600 relative transition-all duration-200 active:scale-95 cursor-pointer ${
+                      gradient === "sunset" ? "ring-2 ring-foreground scale-105" : "border border-border-subtle hover:scale-105"
+                    }`}
+                    title="Sunset Gradient"
+                  />
+                  <button 
+                    onClick={() => setGradient("aurora")}
+                    className={`w-full aspect-square rounded-xl bg-gradient-to-br from-emerald-400 via-teal-500 to-indigo-600 relative transition-all duration-200 active:scale-95 cursor-pointer ${
+                      gradient === "aurora" ? "ring-2 ring-foreground scale-105" : "border border-border-subtle hover:scale-105"
+                    }`}
+                    title="Aurora Borealis"
+                  />
+                  <button 
+                    onClick={() => setGradient("midnight")}
+                    className={`w-full aspect-square rounded-xl bg-gradient-to-br from-indigo-950 via-slate-950 to-[#020617] relative transition-all duration-200 active:scale-95 cursor-pointer ${
+                      gradient === "midnight" ? "ring-2 ring-foreground scale-105" : "border border-border-subtle hover:scale-105"
+                    }`}
+                    title="Midnight Depth"
+                  />
+                  <button 
+                    onClick={() => setGradient("transparent")}
+                    className={`w-full aspect-square rounded-xl relative overflow-hidden transition-all duration-200 active:scale-95 cursor-pointer bg-foreground/[0.04] border border-border-subtle ${
+                      gradient === "transparent" ? "ring-2 ring-foreground scale-105" : "hover:scale-105"
+                    }`}
+                    title="Transparent Background"
+                  >
+                    <div className="absolute inset-0 flex flex-wrap p-1.5 gap-0.5 opacity-30">
+                      <div className="w-1.5 h-1.5 bg-foreground rounded-xs" />
+                      <div className="w-1.5 h-1.5 bg-transparent rounded-xs" />
+                      <div className="w-1.5 h-1.5 bg-transparent rounded-xs" />
+                      <div className="w-1.5 h-1.5 bg-foreground rounded-xs" />
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. 3D Angle Switcher */}
+              <div>
+                <h4 className="text-xs font-semibold text-text-dim uppercase tracking-wider mb-2.5">3. Angle & Tilt</h4>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setIsTilted(true)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                      isTilted 
+                        ? "bg-foreground text-background shadow-md font-bold" 
+                        : "bg-bg-card border border-border-subtle text-text-semi-muted hover:text-foreground-pure"
+                    }`}
+                  >
+                    3D Perspective
+                  </button>
+                  <button 
+                    onClick={() => setIsTilted(false)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                      !isTilted 
+                        ? "bg-foreground text-background shadow-md font-bold" 
+                        : "bg-bg-card border border-border-subtle text-text-semi-muted hover:text-foreground-pure"
+                    }`}
+                  >
+                    Flat View
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Live Viewport Canvas */}
+            <div className="flex-1 flex items-center justify-center p-6 md:p-12 min-h-[480px] relative overflow-hidden bg-foreground/[0.02] z-0 transition-colors">
+              {/* Subtle canvas grid pattern */}
+              <div 
+                className="absolute inset-0 pointer-events-none transition-all duration-300" 
+                style={{
+                  backgroundImage: `linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)`,
+                  backgroundSize: "32px 32px"
+                }}
+              />
+
+              {/* Presentation canvas frame */}
+              <div 
+                className={`w-full max-w-2xl aspect-[16/10] rounded-2xl flex items-center justify-center p-6 md:p-8 shadow-2xl relative transition-all duration-500 overflow-hidden ${
+                  gradient === "sunset" 
+                    ? "bg-gradient-to-br from-pink-500 via-rose-500 to-indigo-600" 
+                    : gradient === "aurora"
+                    ? "bg-gradient-to-br from-emerald-400 via-teal-500 to-indigo-600"
+                    : gradient === "midnight"
+                    ? "bg-gradient-to-br from-indigo-950 via-slate-950 to-[#020617] border border-border-subtle"
+                    : "bg-background border-2 border-dashed border-border-medium"
+                }`}
+                style={gradient === "transparent" ? {
+                  backgroundImage: `linear-gradient(45deg, ${transparentColor} 25%, transparent 25%), linear-gradient(-45deg, ${transparentColor} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${transparentColor} 75%), linear-gradient(-45deg, transparent 75%, ${transparentColor} 75%)`,
+                  backgroundSize: "20px 20px",
+                  backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0"
+                } : undefined}
+              >
+                {/* Visual Glassmorphic glows inside canvas */}
+                {gradient !== "transparent" && (
+                  <div className="absolute top-[-20%] left-[-20%] w-[65%] h-[65%] bg-white/20 rounded-full blur-[80px] pointer-events-none" />
+                )}
+
+                {/* Device Frame Wrapper with dynamic perspective transformations */}
+                <div 
+                  className="w-full flex flex-col items-center justify-center transition-all duration-500 ease-out z-10"
+                  style={{
+                    transform: isTilted 
+                      ? device === "macbook"
+                        ? "perspective(1200px) rotateX(10deg) rotateY(-8deg) rotateZ(1deg)"
+                        : "perspective(1200px) rotateX(12deg) rotateY(-12deg) rotateZ(3deg)"
+                      : "none"
+                  }}
+                >
+                  {/* iOS or Android Phone Frame */}
+                  {(device === "iphone" || device === "pixel") && (
+                    <div 
+                      className={`w-full max-w-[200px] sm:max-w-[220px] aspect-[9/19.5] shadow-[0_25px_50px_rgba(0,0,0,0.6)] relative transition-all duration-500 overflow-hidden flex flex-col ${
+                        device === "iphone"
+                          ? "rounded-[40px] border-[5px] border-zinc-800 bg-[#0d0d11] p-1.5"
+                          : "rounded-[34px] border-[5px] border-zinc-700 bg-[#0a0a0c] p-1.5"
+                      }`}
+                    >
+                      {/* iPhone Dynamic Island */}
+                      {device === "iphone" && (
+                        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-16 h-4 rounded-full bg-black z-30 flex items-center justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-zinc-900 ml-auto mr-1.5" />
+                        </div>
+                      )}
+
+                      {/* Pixel Notch */}
+                      {device === "pixel" && (
+                        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-black z-30 flex items-center justify-center border border-zinc-800" />
+                      )}
+
+                      {/* Phone Screen Mock Interface */}
+                      <div 
+                        className={`flex-1 overflow-hidden relative flex flex-col p-3 transition-all duration-500 ${
+                          device === "iphone" ? "rounded-[32px]" : "rounded-[26px]"
+                        } bg-[#050508] text-white`}
+                      >
+                        {/* Status bar */}
+                        <div className="flex justify-between items-center w-full z-20 px-1 pt-1 select-none">
+                          <span className="text-[9px] font-bold text-white/90 tracking-tight">9:41</span>
+                          <div className="flex gap-1.5 items-center">
+                            {/* Cellular */}
+                            <div className="flex gap-[0.5px] items-end h-2">
+                              <div className="w-[1px] h-1 bg-white rounded-2xs" />
+                              <div className="w-[1px] h-1.5 bg-white rounded-2xs" />
+                              <div className="w-[1px] h-2 bg-white rounded-2xs" />
+                              <div className="w-[1px] h-2.5 bg-white/40 rounded-2xs" />
+                            </div>
+                            {/* Wifi */}
+                            <svg className="w-2.5 h-2.5 text-white/90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8.11 12.4a3 3 0 014.24 0M5.29 9.58a7 7 0 019.9 0M12 15.25h.01" />
+                            </svg>
+                            {/* Battery */}
+                            <div className="w-4 h-2 border border-white/60 rounded-2xs p-[0.5px] flex items-center justify-start relative">
+                              <div className="w-[10px] h-full bg-white rounded-3xs" />
+                              <div className="w-[1.5px] h-[3px] bg-white/60 rounded-r-2xs absolute -right-[2px]" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Fintech App Header */}
+                        <div className="flex justify-between items-center w-full mt-2 px-1 z-20 select-none">
+                          <div className="flex items-center gap-1.5">
+                            {/* User profile avatar */}
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center text-[8px] font-black text-white shadow-md border border-white/10 ring-1 ring-white/5">
+                              GC
+                            </div>
+                            <div className="flex flex-col text-left">
+                              <span className="text-[6px] text-white/40 uppercase font-semibold tracking-wider">Welcome</span>
+                              <span className="text-[9px] font-bold text-white leading-none -mt-[1px]">Gabriel C.</span>
+                            </div>
+                          </div>
+                          {/* Notification bell */}
+                          <div className="w-6 h-6 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/70 hover:text-white transition-all cursor-pointer relative shadow-sm">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 absolute top-1 right-1 border border-black animate-pulse" />
+                          </div>
+                        </div>
+
+                        {/* Wallet Gradient Card */}
+                        <div className="w-full mt-2.5 rounded-2xl p-3 bg-gradient-to-br from-[#4f46e5] via-[#6366f1] to-[#a855f7] shadow-[0_8px_20px_rgba(79,70,229,0.25)] relative overflow-hidden flex flex-col justify-between border border-white/20 select-none">
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full blur-md pointer-events-none" />
+                          
+                          <div className="flex justify-between items-start z-10">
+                            <div className="flex flex-col text-left">
+                              <span className="text-[6px] text-white/60 uppercase font-semibold tracking-wider">Total balance</span>
+                              <span className="text-sm font-extrabold text-white leading-none mt-1 tracking-tight">$14,250.84</span>
+                            </div>
+                            <div className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/20 text-emerald-300 text-[6px] font-bold flex items-center gap-0.5">
+                              <svg className="w-1.5 h-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                              </svg>
+                              <span>+8.4%</span>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-end mt-3.5 z-10">
+                            <div className="flex flex-col text-left font-mono">
+                              <span className="text-[7px] text-white/80 tracking-widest">**** 8842</span>
+                              <span className="text-[5px] text-white/50 uppercase tracking-wider mt-0.5">Gabriel Chipaya</span>
+                            </div>
+                            <div className="flex gap-1 items-center">
+                              <div className="w-4 h-3 bg-amber-400/80 rounded-2xs border border-white/10 flex flex-col gap-0.5 p-[1px] justify-between">
+                                <div className="w-full h-[0.5px] bg-black/10 rounded-3xs" />
+                                <div className="w-full h-[0.5px] bg-black/10 rounded-3xs" />
+                              </div>
+                              <div className="flex -space-x-1.5">
+                                <div className="w-3 h-3 rounded-full bg-rose-500/90" />
+                                <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Actions Row */}
+                        <div className="grid grid-cols-4 gap-2 w-full mt-2.5 px-1 z-20 select-none">
+                          {[
+                            { label: "Send", color: "from-blue-500 to-indigo-500", icon: (
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0v12m0-12L4 20" />
+                              </svg>
+                            )},
+                            { label: "Receive", color: "from-emerald-500 to-teal-500", icon: (
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 17H4m0 0V5m0 12l16-16" />
+                              </svg>
+                            )},
+                            { label: "Stocks", color: "from-purple-500 to-pink-500", icon: (
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
+                            )},
+                            { label: "Bills", color: "from-amber-500 to-orange-500", icon: (
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                              </svg>
+                            )}
+                          ].map((action, idx) => (
+                            <div key={idx} className="flex flex-col items-center gap-1 cursor-pointer">
+                              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${action.color} flex items-center justify-center shadow-md active:scale-95 transition-all`}>
+                                {action.icon}
+                              </div>
+                              <span className="text-[7px] text-white/50 font-medium tracking-tight">{action.label}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Mini Performance Graph */}
+                        <div className="w-full mt-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.06] p-2 relative z-20 select-none text-left">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[7px] font-bold text-white/40 uppercase tracking-wider">Weekly performance</span>
+                            <span className="text-[8px] font-bold text-emerald-400">+14.2%</span>
+                          </div>
+                          
+                          <div className="w-full h-11 relative mt-1">
+                            <div className="absolute inset-x-0 top-0 h-px border-t border-dashed border-white/[0.04]" />
+                            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px border-t border-dashed border-white/[0.04]" />
+                            <div className="absolute inset-x-0 bottom-0 h-px border-t border-dashed border-white/[0.04]" />
+                            
+                            <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                              <defs>
+                                <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#818cf8" stopOpacity="0.4" />
+                                  <stop offset="100%" stopColor="#818cf8" stopOpacity="0.0" />
+                                </linearGradient>
+                              </defs>
+                              <path d="M 0 30 L 0 18 Q 15 10 30 15 T 60 8 T 85 18 T 100 12 L 100 30 Z" fill="url(#chart-grad)" />
+                              <path d="M 0 18 Q 15 10 30 15 T 60 8 T 85 18 T 100 12" fill="none" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round" />
+                              <circle cx="60" cy="8" r="1.5" fill="#f43f5e" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Recent Transactions Feed */}
+                        <div className="w-full mt-2.5 flex-1 flex flex-col justify-start z-20 select-none text-left overflow-hidden">
+                          <div className="flex justify-between items-center mb-1 px-0.5">
+                            <span className="text-[8px] font-bold text-white/80">Activity log</span>
+                            <span className="text-[7px] font-bold text-indigo-400 hover:underline cursor-pointer">See all</span>
+                          </div>
+                          
+                          <div className="flex flex-col gap-1 overflow-hidden">
+                            {[
+                              { name: "Stripe transfer", time: "2m ago", amt: "+$2,450.00", icon: (
+                                <div className="w-4.5 h-4.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                  </svg>
+                                </div>
+                              ), amtColor: "text-emerald-400" },
+                              { name: "Figma Pro Suite", time: "1h ago", amt: "-$15.00", icon: (
+                                <div className="w-4.5 h-4.5 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                                  </svg>
+                                </div>
+                              ), amtColor: "text-white/85" },
+                              { name: "Vercel hosting", time: "Yesterday", amt: "-$20.00", icon: (
+                                <div className="w-4.5 h-4.5 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                                  </svg>
+                                </div>
+                              ), amtColor: "text-white/85" }
+                            ].map((item, idx) => (
+                              <div key={idx} className="flex justify-between items-center rounded-xl bg-white/[0.01] hover:bg-white/[0.03] p-1 border border-white/[0.04] transition-colors">
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                  {item.icon}
+                                  <div className="flex flex-col text-left truncate">
+                                    <span className="text-[7.5px] font-bold text-white/95 leading-none truncate">{item.name}</span>
+                                    <span className="text-[5.5px] text-white/40 mt-0.5">{item.time}</span>
+                                  </div>
+                                </div>
+                                <span className={`text-[7.5px] font-extrabold ${item.amtColor} shrink-0`}>{item.amt}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Frosted Bottom Navigation Bar Capsule */}
+                        <div className="w-full mt-auto pt-1 z-20 select-none">
+                          <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.06] rounded-xl py-0.5 px-2.5 flex justify-between items-center">
+                            {[
+                              { active: true, icon: (
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 3L4 9v12h16V9l-8-6zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" />
+                                </svg>
+                              )},
+                              { icon: (
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+                                </svg>
+                              )},
+                              { icon: (
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              )},
+                              { icon: (
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                </svg>
+                              )}
+                            ].map((tab, idx) => (
+                              <button key={idx} className={`w-7 h-7 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer ${
+                                tab.active ? "text-indigo-400 bg-white/[0.04]" : "text-white/40 hover:text-white/80"
+                              }`}>
+                                {tab.icon}
+                                {tab.active && <span className="w-0.5 h-0.5 rounded-full bg-indigo-400 mt-0.5" />}
+                              </button>
+                            ))}
+                          </div>
+                          
+                          {/* Grab Bar Indicator */}
+                          <div className="w-10 h-0.5 bg-white/20 rounded-full mx-auto mt-1.5" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MacBook Laptop Frame */}
+                  {device === "macbook" && (
+                    <div className="w-full max-w-[420px] sm:max-w-[440px] flex flex-col items-center transition-all duration-500">
+                      {/* Display Screen */}
+                      <div className="w-full aspect-[16/10] rounded-xl border-[6px] border-zinc-900 bg-zinc-950 p-1 shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative overflow-hidden flex flex-col">
+                        {/* Center Notch */}
+                        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-8 h-2.5 rounded-b-md bg-black z-30" />
+
+                        {/* Mock Desktop Screen */}
+                        <div className="flex-1 rounded-sm overflow-hidden bg-[#07070a] border border-white/[0.04] flex flex-col relative select-none">
+                          {/* Ambient background glow */}
+                          <div className="absolute -top-10 -right-10 w-24 h-24 bg-pink-500/5 rounded-full blur-2xl pointer-events-none" />
+                          <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+
+                          {/* Laptop window control buttons & top status bar */}
+                          <div className="flex justify-between items-center w-full px-3 py-1.5 border-b border-white/[0.05] bg-black/40 backdrop-blur-sm z-10 text-[7px] text-white/50">
+                            <div className="flex gap-1.5 items-center">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500/80" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+                            </div>
+                            <span className="font-semibold tracking-wide text-white/70 flex items-center gap-1">
+                              <svg className="w-2 h-2 text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+                              </svg>
+                              console.muckly.io/dashboard
+                            </span>
+                            <div className="flex items-center gap-1.5 text-white/40">
+                              <span>us-east-1</span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            </div>
+                          </div>
+
+                          {/* Two-Column Workspace Layout */}
+                          <div className="flex-1 flex overflow-hidden">
+                            {/* Left Dashboard Sidebar */}
+                            <div className="w-1/4 border-r border-white/[0.05] bg-black/20 p-2 flex flex-col gap-1 text-left">
+                              <div className="flex items-center gap-1 px-1.5 py-1 mb-1 border-b border-white/[0.04]">
+                                <div className="w-3.5 h-3.5 rounded-md bg-gradient-to-r from-indigo-500 to-pink-500 flex items-center justify-center text-[7px] font-black text-white">M</div>
+                                <span className="text-[8px] font-bold text-white">Muckly Cloud</span>
+                              </div>
+                              {[
+                                { active: true, name: "Dashboard", icon: (
+                                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                                  </svg>
+                                )},
+                                { name: "Deployments", icon: (
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                  </svg>
+                                )},
+                                { name: "ImageKit CDN", icon: (
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                )},
+                                { name: "Billing", icon: (
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                )},
+                                { name: "Settings", icon: (
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                  </svg>
+                                )}
+                              ].map((item, idx) => (
+                                <div key={idx} className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[8px] font-semibold transition-all cursor-pointer ${
+                                  item.active ? "bg-indigo-600 text-white shadow-md" : "text-white/50 hover:text-white hover:bg-white/[0.02]"
+                                }`}>
+                                  {item.icon}
+                                  <span>{item.name}</span>
+                                </div>
+                              ))}
+                              
+                              <div className="mt-auto border-t border-white/[0.04] pt-2 px-1 text-[7px] text-white/35 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                <span>All systems operational</span>
+                              </div>
+                            </div>
+
+                            {/* Main Display Pane */}
+                            <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto text-left">
+                              {/* Pane Header */}
+                              <div className="flex justify-between items-center border-b border-white/[0.04] pb-1.5">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-bold text-white tracking-tight">Overview panel</span>
+                                  <span className="text-[6px] text-white/40 mt-0.5">Real-time operational console</span>
+                                </div>
+                                <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-400/20 text-indigo-400 text-[6px] font-bold tracking-wider uppercase">Live Sync</span>
+                              </div>
+
+                              {/* Three Stat Cards Grid */}
+                              <div className="grid grid-cols-3 gap-2">
+                                {[
+                                  { label: "Active Users", val: "1,842", change: "+12.4%", color: "text-emerald-400" },
+                                  { label: "Response", val: "48ms", change: "-8.2%", color: "text-indigo-400" },
+                                  { label: "Exports", val: "924", change: "+24.5%", color: "text-pink-400" }
+                                ].map((stat, idx) => (
+                                  <div key={idx} className="rounded-lg bg-white/[0.01] border border-white/[0.05] p-2 flex flex-col">
+                                    <span className="text-[6px] text-white/40 font-semibold uppercase">{stat.label}</span>
+                                    <span className="text-xs font-bold text-white mt-1 leading-none">{stat.val}</span>
+                                    <span className={`text-[6px] font-bold ${stat.color} mt-1`}>{stat.change}</span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* SaaS Main Performance Chart */}
+                              <div className="rounded-lg bg-white/[0.01] border border-white/[0.05] p-2 flex flex-col gap-1.5 flex-1 min-h-[60px]">
+                                <div className="flex justify-between items-center text-[6px] text-white/40">
+                                  <span className="font-bold uppercase tracking-wider">Deployment Uptime & Bandwidth</span>
+                                  <span className="text-white/60">Target: 99.99%</span>
+                                </div>
+                                
+                                <div className="w-full flex-1 relative min-h-[40px]">
+                                  {/* Y Axis line guides */}
+                                  <div className="absolute inset-x-0 top-0 h-px border-t border-white/[0.02]" />
+                                  <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px border-t border-white/[0.02]" />
+                                  <div className="absolute inset-x-0 bottom-0 h-px border-t border-white/[0.02]" />
+                                  
+                                  <svg className="w-full h-full" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                    <defs>
+                                      <linearGradient id="svg-chart-fill-purple" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
+                                        <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                                      </linearGradient>
+                                      <linearGradient id="svg-chart-fill-cyan" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
+                                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+                                      </linearGradient>
+                                    </defs>
+                                    
+                                    {/* Area 1 (Cyan) */}
+                                    <path d="M 0 40 L 0 32 Q 30 20 60 28 T 120 18 T 170 30 L 200 24 L 200 40 Z" fill="url(#svg-chart-fill-cyan)" />
+                                    {/* Line 1 (Cyan) */}
+                                    <path d="M 0 32 Q 30 20 60 28 T 120 18 T 170 30 L 200 24" fill="none" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" />
+                                    
+                                    {/* Area 2 (Purple) */}
+                                    <path d="M 0 40 L 0 24 Q 40 10 80 18 T 140 12 T 180 20 L 200 14 L 200 40 Z" fill="url(#svg-chart-fill-purple)" />
+                                    {/* Line 2 (Purple) */}
+                                    <path d="M 0 24 Q 40 10 80 18 T 140 12 T 180 20 L 200 14" fill="none" stroke="#6366f1" strokeWidth="1.2" strokeLinecap="round" />
+                                    
+                                    {/* Active tooltip point */}
+                                    <circle cx="140" cy="12" r="1.5" fill="#f43f5e" />
+                                  </svg>
+                                </div>
+                              </div>
+
+                              {/* Database connection table */}
+                              <div className="flex flex-col gap-1 mt-1">
+                                <span className="text-[6px] font-bold text-white/30 uppercase tracking-widest">Active Services</span>
+                                <div className="grid grid-cols-3 gap-1 text-[7px] text-white/70">
+                                  {[
+                                    { app: "db_neon_prod", latency: "1.2ms" },
+                                    { app: "imagekit_cdn", latency: "14.8ms" },
+                                    { app: "dodo_pay_api", latency: "38.2ms" }
+                                  ].map((serv, idx) => (
+                                    <div key={idx} className="rounded bg-white/[0.01] border border-white/[0.04] p-1 flex items-center justify-between">
+                                      <div className="flex items-center gap-1 overflow-hidden">
+                                        <span className="w-1 h-1 rounded-full bg-emerald-400 shrink-0" />
+                                        <span className="font-bold text-white/90 truncate">{serv.app}</span>
+                                      </div>
+                                      <span className="text-[6px] text-white/40">{serv.latency}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Base stand bottom lip with metallic notch */}
+                      <div className="w-[110%] -ml-[5%] h-2 bg-zinc-800 rounded-b-lg border-t border-zinc-700 shadow-md relative z-20 flex items-center justify-center">
+                        <div className="w-10 h-0.5 bg-zinc-950 rounded-b-sm -mt-0.5" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="py-24 border-t border-border-subtle relative transition-all">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-3">The Workflow</h2>
+            <h3 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground-pure mb-4">
+              Pristine mockups in three simple steps
+            </h3>
+            <p className="text-text-muted leading-relaxed text-base">
+              Say goodbye to opening heavy design files, adjusting perspectives manually, or rendering templates. Muckly automates your device framing process instantly.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            {/* Feature 1 */}
+            <div className="rounded-2xl border border-border-subtle bg-bg-card hover:bg-bg-card-hover hover:border-indigo-500/20 hover:shadow-[0_10px_35px_rgba(99,102,241,0.06)] hover:-translate-y-1 transition-all duration-300 p-8 flex flex-col h-full group">
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all duration-300">
+                <svg className="w-6 h-6 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </div>
+              <h4 className="text-xl font-bold text-foreground-pure mb-3">1. Upload Screenshot</h4>
+              <p className="text-text-muted leading-relaxed text-sm flex-1">
+                Drag and drop your raw Android or iOS emulator screenshots directly into the browser. We accept standard, high-resolution PNG, JPG, and WebP formats automatically.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="rounded-2xl border border-border-subtle bg-bg-card hover:bg-bg-card-hover hover:border-purple-500/20 hover:shadow-[0_10px_35px_rgba(168,85,247,0.06)] hover:-translate-y-1 transition-all duration-300 p-8 flex flex-col h-full group">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 group-hover:rotate-6 group-hover:bg-purple-500/20 transition-all duration-300">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h4 className="text-xl font-bold text-foreground-pure mb-3">2. Choose Device Frame</h4>
+              <p className="text-text-muted leading-relaxed text-sm flex-1">
+                Select your preferred presentation layout. Wrap your screens in pixel-perfect iPhone 15 Pro, Google Pixel 9, or desktop MacBook Pro frames. Customize background gradients and 3D tilts.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="rounded-2xl border border-border-subtle bg-bg-card hover:bg-bg-card-hover hover:border-pink-500/20 hover:shadow-[0_10px_35px_rgba(236,72,153,0.06)] hover:-translate-y-1 transition-all duration-300 p-8 flex flex-col h-full group">
+              <div className="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 mb-6 group-hover:scale-110 group-hover:bg-pink-500/20 transition-all duration-300">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h4 className="text-xl font-bold text-foreground-pure mb-3">3. Export Mockup</h4>
+              <p className="text-text-muted leading-relaxed text-sm flex-1">
+                Download pristine, high-resolution PNG mockups with a transparent or custom-gradient background in 1-click. Ready to post directly on Dribbble, Twitter, or upload to the App Store.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="py-24 border-t border-border-subtle relative transition-all">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-purple-400 mb-3">Plans & Pricing</h2>
+            <h3 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground-pure mb-4">
+              Simple, transparent pricing
+            </h3>
+            <p className="text-text-muted leading-relaxed text-base">
+              Get started with our completely free tier or unlock unlimited high-resolution assets, luxury templates, and 3D device alignments.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            
+            {/* Free Plan */}
+            <div className="rounded-3xl border border-border-subtle bg-bg-card p-8 md:p-10 flex flex-col justify-between relative overflow-hidden group transition-all">
+              <div>
+                <h4 className="text-xl font-bold text-foreground-pure mb-2">Free Plan</h4>
+                <p className="text-sm text-text-dim mb-6">For casual makers and designers.</p>
+                <div className="flex items-baseline gap-1 text-foreground-pure mb-8">
+                  <span className="text-4xl md:text-5xl font-extrabold">$0</span>
+                  <span className="text-sm text-text-dim">/ month</span>
+                </div>
+
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>5 high-res exports per month</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Standard mobile device frames</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Solid color backgrounds</span>
+                  </li>
+                </ul>
+              </div>
+
+              <a 
+                id="pricing-free-cta"
+                href="/signup"
+                className="w-full inline-flex items-center justify-center text-sm font-semibold border border-border-medium hover:bg-bg-card-hover text-foreground-pure rounded-xl py-3 active:scale-[0.98] transition-all duration-200"
+              >
+                Get started free
+              </a>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="rounded-3xl border-2 border-indigo-500/30 bg-bg-card p-8 md:p-10 flex flex-col justify-between relative overflow-hidden group shadow-xl shadow-indigo-500/[0.04] transition-all">
+              {/* Featured Badge */}
+              <div className="absolute top-4 right-4 rounded-full bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-400">
+                Most Popular
+              </div>
+
+              <div>
+                <h4 className="text-xl font-bold text-foreground-pure mb-2">Pro Plan</h4>
+                <p className="text-sm text-text-dim mb-6">For professional designers and creators.</p>
+                <div className="flex items-baseline gap-1 text-foreground-pure mb-8">
+                  <span className="text-4xl md:text-5xl font-extrabold">$9</span>
+                  <span className="text-sm text-text-dim">/ month</span>
+                </div>
+
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="font-semibold text-foreground-pure">Unlimited exports</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>All premium frames (MacBook, Tablet, Watch)</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Custom background gradients & 3D tilt angles</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>No watermarks & 4K HD output</span>
+                  </li>
+                </ul>
+              </div>
+
+              <a 
+                id="pricing-pro-cta"
+                href="/signup?plan=pro"
+                className="w-full inline-flex items-center justify-center text-sm font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl py-3 shadow-lg shadow-indigo-500/25 hover:opacity-90 active:scale-[0.98] transition-all duration-200"
+              >
+                Upgrade to Pro
+              </a>
+            </div>
+
+          </div>
+        </section>
+
+        {/* Elegant FAQ Section */}
+        <section id="faq" className="py-24 border-t border-border-subtle relative transition-all">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-pink-400 mb-3">FAQ</h2>
+            <h3 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground-pure mb-4">
+              Got Questions?
+            </h3>
+            <p className="text-text-muted leading-relaxed text-base">
+              Everything you need to know about Muckly's automated mockup design framework.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto space-y-4">
+            {faqs.map((faq, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div 
+                  key={index}
+                  className="rounded-2xl border border-border-subtle bg-bg-card overflow-hidden transition-all duration-300 hover:border-border-strong"
+                >
+                  <button
+                    onClick={() => toggleFaq(index)}
+                    className="w-full py-6 px-8 flex justify-between items-center text-left text-foreground-pure hover:bg-bg-card-hover transition-all duration-200 cursor-pointer"
+                  >
+                    <span className="font-semibold text-base pr-4">{faq.question}</span>
+                    <span className={`w-5 h-5 flex items-center justify-center rounded-full bg-bg-card-active border border-border-medium shrink-0 text-text-dim transition-transform duration-300 ${
+                      isOpen ? "rotate-180 text-foreground-pure border-border-strong bg-bg-card-active" : ""
+                    }`}>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </button>
+                  
+                  {/* Dynamic Height Disclosure Area */}
+                  <div 
+                    className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      isOpen ? "max-h-[200px] border-t border-border-subtle" : "max-h-0"
+                    }`}
+                  >
+                    <div className="p-8 text-sm text-text-muted leading-relaxed bg-foreground/[0.01]">
+                      {faq.answer}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* CTA Banner */}
+        <section className="py-20 mb-20 rounded-3xl border border-border-subtle bg-gradient-to-r from-indigo-500/[0.03] via-purple-500/[0.03] to-transparent flex flex-col items-center text-center p-8 md:p-16 relative overflow-hidden transition-all">
+          <div className="absolute inset-0 opacity-[0.01] pointer-events-none" style={{ backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.5) 1px, transparent 1px)`, backgroundSize: "32px 32px" }} />
+          <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground-pure mb-4">Ready to elevate your app presentation?</h3>
+          <p className="text-text-muted max-w-xl mb-8 text-sm md:text-base">Start wrapping your screenshots in premium mockups instantly. No credit card required to test drive the free features.</p>
+          <a 
+            id="banner-cta"
+            href="/signup" 
+            className="inline-flex items-center justify-center text-sm font-semibold bg-foreground text-background hover:opacity-95 active:scale-[0.98] transition-all duration-200 rounded-full px-8 py-3.5 shadow-xl"
+          >
+            Create Your First Mockup
+          </a>
+        </section>
+
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border-subtle bg-[var(--header-bg-scrolled)] relative z-10 py-16 transition-colors">
+        <div className="mx-auto max-w-7xl px-6 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
+          
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <Image 
+                src="/logo.png" 
+                alt="Muckly Logo" 
+                width={24} 
+                height={24} 
+                className="rounded-md object-cover border border-border-subtle"
+              />
+              <span className="text-lg font-bold tracking-tight text-foreground-pure">Muckly</span>
+            </div>
+            <p className="text-xs text-text-dim max-w-xs leading-relaxed">
+              Instantly transform raw screenshots into high-end, customizable device mockups. Made for builders, designers, and creators worldwide.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-x-12 gap-y-6 text-xs text-text-muted">
+            <a href="#features" className="hover:text-foreground-pure transition-colors duration-150">Features</a>
+            <a href="#playground" className="hover:text-foreground-pure transition-colors duration-150">Playground</a>
+            <a href="#pricing" className="hover:text-foreground-pure transition-colors duration-150">Pricing</a>
+            <a href="/terms" className="hover:text-white transition-colors duration-150">Terms of Service</a>
+            <a href="/privacy" className="hover:text-white transition-colors duration-150">Privacy Policy</a>
+          </div>
+
+        </div>
+
+        <div className="mx-auto max-w-7xl px-6 md:px-8 mt-12 pt-6 border-t border-border-subtle flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-text-dim">
+          <div>&copy; {new Date().getFullYear()} Muckly Inc. All rights reserved.</div>
+          <div className="flex items-center gap-1.5">
+            <span>Built by</span>
+            <a 
+              href="https://github.com/barakis" 
+              className="text-text-muted hover:text-indigo-400 font-medium transition-colors duration-150 border-b border-border-medium hover:border-indigo-400 pb-0.5"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Barakis
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
