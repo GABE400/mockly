@@ -2,6 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
+import { useTheme } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const faqs = [
   {
@@ -23,8 +28,40 @@ const faqs = [
 ];
 
 export default function MarketingPage() {
-  // Theme state
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const { theme } = useTheme();
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [isLoadingPro, setIsLoadingPro] = useState(false);
+
+  const handleProUpgrade = async (e: React.MouseEvent) => {
+    if (!session) {
+      // User is not logged in, proceed to register page
+      return;
+    }
+
+    e.preventDefault();
+    setIsLoadingPro(true);
+
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create checkout session.");
+      }
+
+      // Redirect immediately to secure Dodo Payments portal
+      window.location.href = data.checkoutUrl;
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "An unexpected error occurred during checkout initialization.");
+      setIsLoadingPro(false);
+    }
+  };
 
   // Navigation morphing state
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,30 +73,6 @@ export default function MarketingPage() {
 
   // FAQ Accordion states
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  // Initialize theme from localStorage
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as "dark" | "light" | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-      if (savedTheme === "light") {
-        document.documentElement.classList.add("light");
-      } else {
-        document.documentElement.classList.remove("light");
-      }
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    if (nextTheme === "light") {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -139,65 +152,41 @@ export default function MarketingPage() {
           <div className="flex items-center gap-4">
             
             {/* Elegant Custom Theme Toggle Capsule */}
-            <button
-              onClick={toggleTheme}
-              className="w-8 h-8 rounded-full border border-border-subtle bg-bg-card hover:bg-bg-card-hover flex items-center justify-center text-text-muted hover:text-foreground-pure active:scale-95 transition-all duration-300 focus:outline-none cursor-pointer"
-              aria-label="Toggle Theme"
-            >
-              <div className="relative w-4 h-4 flex items-center justify-center">
-                {/* Sun Icon */}
-                <svg
-                  className={`w-4 h-4 absolute transition-all duration-500 ease-in-out ${
-                    theme === "light" 
-                      ? "rotate-0 scale-100 opacity-100" 
-                      : "rotate-90 scale-0 opacity-0"
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"
-                  />
-                </svg>
-                {/* Moon Icon */}
-                <svg
-                  className={`w-4 h-4 absolute transition-all duration-500 ease-in-out ${
-                    theme === "dark" 
-                      ? "rotate-0 scale-100 opacity-100" 
-                      : "-rotate-90 scale-0 opacity-0"
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                  />
-                </svg>
-              </div>
-            </button>
+            <ThemeToggle />
 
-            <a 
-              id="nav-login-btn"
-              href="/login" 
-              className="text-xs md:text-sm font-medium text-text-semi-muted hover:text-foreground-pure transition-colors duration-200 px-3 py-1.5"
-            >
-              Sign In
-            </a>
-            <a 
-              id="nav-signup-btn"
-              href="/signup" 
-              className="hidden sm:inline-flex items-center justify-center text-xs font-semibold bg-foreground text-background hover:opacity-90 active:scale-[0.98] transition-all duration-200 rounded-full px-4 py-2"
-            >
-              Get Started
-            </a>
+            {session ? (
+              <>
+                <Link 
+                  href="/dashboard" 
+                  className="text-xs md:text-sm font-semibold text-text-semi-muted hover:text-foreground-pure transition-colors duration-200 px-3 py-1.5"
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/settings/billing" 
+                  className="hidden sm:inline-flex items-center justify-center text-xs font-semibold bg-foreground text-background hover:opacity-90 active:scale-[0.98] transition-all duration-200 rounded-full px-4 py-2"
+                >
+                  Manage Account
+                </Link>
+              </>
+            ) : (
+              <>
+                <a 
+                  id="nav-login-btn"
+                  href="/sign-in" 
+                  className="text-xs md:text-sm font-medium text-text-semi-muted hover:text-foreground-pure transition-colors duration-200 px-3 py-1.5"
+                >
+                  Sign In
+                </a>
+                <a 
+                  id="nav-signup-btn"
+                  href="/sign-up" 
+                  className="hidden sm:inline-flex items-center justify-center text-xs font-semibold bg-foreground text-background hover:opacity-90 active:scale-[0.98] transition-all duration-200 rounded-full px-4 py-2"
+                >
+                  Get Started
+                </a>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -952,13 +941,22 @@ export default function MarketingPage() {
                 </ul>
               </div>
 
-              <a 
-                id="pricing-free-cta"
-                href="/signup"
-                className="w-full inline-flex items-center justify-center text-sm font-semibold border border-border-medium hover:bg-bg-card-hover text-foreground-pure rounded-xl py-3 active:scale-[0.98] transition-all duration-200"
-              >
-                Get started free
-              </a>
+              {session ? (
+                <Link 
+                  href="/dashboard"
+                  className="w-full inline-flex items-center justify-center text-sm font-semibold border border-border-medium hover:bg-bg-card-hover text-foreground-pure rounded-xl py-3 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+                >
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <a 
+                  id="pricing-free-cta"
+                  href="/sign-up"
+                  className="w-full inline-flex items-center justify-center text-sm font-semibold border border-border-medium hover:bg-bg-card-hover text-foreground-pure rounded-xl py-3 active:scale-[0.98] transition-all duration-200"
+                >
+                  Get started free
+                </a>
+              )}
             </div>
 
             {/* Pro Plan */}
@@ -1004,13 +1002,39 @@ export default function MarketingPage() {
                 </ul>
               </div>
 
-              <a 
-                id="pricing-pro-cta"
-                href="/signup?plan=pro"
-                className="w-full inline-flex items-center justify-center text-sm font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl py-3 shadow-lg shadow-indigo-500/25 hover:opacity-90 active:scale-[0.98] transition-all duration-200"
-              >
-                Upgrade to Pro
-              </a>
+              {session ? (
+                session.user.plan === "pro" ? (
+                  <Link 
+                    href="/settings/billing"
+                    className="w-full inline-flex items-center justify-center text-sm font-semibold border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 rounded-xl py-3 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+                  >
+                    Manage Subscription
+                  </Link>
+                ) : (
+                  <button 
+                    onClick={handleProUpgrade}
+                    disabled={isLoadingPro}
+                    className="w-full inline-flex items-center justify-center text-sm font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl py-3 shadow-lg shadow-indigo-500/25 hover:opacity-90 active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoadingPro ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Loading checkout...
+                      </>
+                    ) : (
+                      "Upgrade to Pro"
+                    )}
+                  </button>
+                )
+              ) : (
+                <a 
+                  id="pricing-pro-cta"
+                  href="/sign-up?plan=pro"
+                  className="w-full inline-flex items-center justify-center text-sm font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl py-3 shadow-lg shadow-indigo-500/25 hover:opacity-90 active:scale-[0.98] transition-all duration-200"
+                >
+                  Upgrade to Pro
+                </a>
+              )}
             </div>
 
           </div>
@@ -1073,7 +1097,7 @@ export default function MarketingPage() {
           <p className="text-text-muted max-w-xl mb-8 text-sm md:text-base">Start wrapping your screenshots in premium mockups instantly. No credit card required to test drive the free features.</p>
           <a 
             id="banner-cta"
-            href="/signup" 
+            href="/sign-up" 
             className="inline-flex items-center justify-center text-sm font-semibold bg-foreground text-background hover:opacity-95 active:scale-[0.98] transition-all duration-200 rounded-full px-8 py-3.5 shadow-xl"
           >
             Create Your First Mockup

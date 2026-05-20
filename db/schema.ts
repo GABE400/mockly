@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 
 // 1. Users Table
 export const user = pgTable("user", {
@@ -9,6 +9,9 @@ export const user = pgTable("user", {
   image: text("image"),
   avatarUrl: text("avatar_url"),
   plan: text("plan").$type<"free" | "pro">().default("free").notNull(),
+  role: text("role").$type<"admin" | "user">().default("user").notNull(),
+  onboardingAnswers: jsonb("onboarding_answers"),
+  onboardingComplete: boolean("onboarding_complete").default(false).notNull(),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });
@@ -44,6 +47,9 @@ export const account = pgTable("account", {
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   idToken: text("id_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+  scope: text("scope"),
   expiresAt: timestamp("expires_at"),
   password: text("password"),
   createdAt: timestamp("created_at").notNull(),
