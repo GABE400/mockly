@@ -107,6 +107,7 @@ export default function PricingPage() {
             <Link href="/#features" className="hover:text-foreground-pure transition-colors duration-200">Features</Link>
             <Link href="/#playground" className="hover:text-foreground-pure transition-colors duration-200">Playground</Link>
             <Link href="/pricing" className="text-foreground-pure font-bold transition-colors duration-200">Pricing</Link>
+            <Link href="/support" className="hover:text-foreground-pure transition-colors duration-200">Support</Link>
             <Link href="/#faq" className="hover:text-foreground-pure transition-colors duration-200">FAQ</Link>
           </nav>
 
@@ -393,6 +394,7 @@ export default function PricingPage() {
             <Link href="/#features" className="hover:text-foreground-pure transition-colors duration-150">Features</Link>
             <Link href="/#playground" className="hover:text-foreground-pure transition-colors duration-150">Playground</Link>
             <Link href="/pricing" className="hover:text-foreground-pure transition-colors duration-150">Pricing</Link>
+            <Link href="/support" className="hover:text-foreground-pure transition-colors duration-150">Support</Link>
             <Link href="/terms" className="hover:text-white transition-colors duration-150">Terms of Service</Link>
             <Link href="/privacy" className="hover:text-white transition-colors duration-150">Privacy Policy</Link>
           </div>

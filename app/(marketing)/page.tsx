@@ -156,6 +156,7 @@ export default function MarketingPage() {
             <a href="#features" className="hover:text-foreground-pure transition-colors duration-200">Features</a>
             <a href="#playground" className="hover:text-foreground-pure transition-colors duration-200">Playground</a>
             <a href="#pricing" className="hover:text-foreground-pure transition-colors duration-200">Pricing</a>
+            <a href="/support" className="hover:text-foreground-pure transition-colors duration-200">Support</a>
             <a href="#faq" className="hover:text-foreground-pure transition-colors duration-200">FAQ</a>
           </nav>
 
@@ -1320,6 +1321,7 @@ export default function MarketingPage() {
             <a href="#features" className="hover:text-foreground-pure transition-colors duration-150">Features</a>
             <a href="#playground" className="hover:text-foreground-pure transition-colors duration-150">Playground</a>
             <a href="#pricing" className="hover:text-foreground-pure transition-colors duration-150">Pricing</a>
+            <a href="/support" className="hover:text-foreground-pure transition-colors duration-150">Support</a>
             <a href="/terms" className="hover:text-white transition-colors duration-150">Terms of Service</a>
             <a href="/privacy" className="hover:text-white transition-colors duration-150">Privacy Policy</a>
           </div>
