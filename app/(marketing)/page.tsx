@@ -14,12 +14,12 @@ const faqs = [
     answer: "Muckly detects your screenshot's aspect ratio and instantly wraps it in a perfect vector outline of your chosen device. No heavy graphics software or manual alignment required."
   },
   {
-    question: "Can I export mockups with a transparent background?",
-    answer: "Absolutely! Choose the transparent preset in the background selector and Muckly will export a high-definition PNG with transparency, perfect for landing pages and graphic assets."
+    question: "What backgrounds and styling options are available?",
+    answer: "Choose from deep solids, premium linear gradients (like Sunset Glow and Cosmic Aurora), or high-fidelity blurred mesh backdrops. You can also customize your own backdrop colors to perfectly complement your app's brand."
   },
   {
-    question: "What mobile and desktop frames are available?",
-    answer: "On the Free plan, you get access to standard iPhone and Android mobile frames. On the Pro plan, you unlock MacBook Pro, iPad Pro, Apple Watch, and several luxury studio presentation scenes."
+    question: "What mobile device frames are available?",
+    answer: "Muckly supports a curated collection of premium mobile frames, including the latest iPhone 17 Pro, iPhone 16 Pro, Google Pixel 9 Pro, Samsung Galaxy S24, and Sony Xperia 1 VI. All frames are fully customizable with multiple titanium and color finishes."
   },
   {
     question: "Is there a commercial license included with Pro?",
@@ -64,8 +64,8 @@ export default function MarketingPage() {
   };
 
   // Playground customize states
-  const [device, setDevice] = useState<"iphone" | "pixel" | "macbook">("iphone");
-  const [gradient, setGradient] = useState<"sunset" | "aurora" | "midnight" | "transparent">("sunset");
+  const [device, setDevice] = useState<"iphone" | "pixel" | "samsung">("iphone");
+  const [gradient, setGradient] = useState<"sunset" | "aurora" | "midnight" | "lavender">("sunset");
   const [isTilted, setIsTilted] = useState(true);
   const [gridVisible, setGridVisible] = useState(false);
   const [gridStyle, setGridStyle] = useState<"dots" | "lines" | "cross">("dots");
@@ -75,7 +75,7 @@ export default function MarketingPage() {
   const [textColor, setTextColor] = useState("");
   const [textPosition, setTextPosition] = useState<"Top" | "Bottom">("Top");
 
-  const isBgLight = gradient === "transparent" ? theme !== "dark" : false;
+  const isBgLight = false;
 
 
   // FAQ Accordion states
@@ -84,8 +84,6 @@ export default function MarketingPage() {
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
   };
-
-  const transparentColor = theme === "dark" ? "#18181b" : "#e4e4e7";
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-foreground/10 selection:text-foreground-pure transition-colors duration-300">
@@ -205,15 +203,15 @@ export default function MarketingPage() {
                     <span>Pixel 9 Pro</span>
                   </button>
                   <button 
-                    onClick={() => setDevice("macbook")}
+                    onClick={() => setDevice("samsung")}
                     className={`flex items-center justify-center lg:justify-start gap-2.5 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 cursor-pointer ${
-                      device === "macbook" 
+                      device === "samsung" 
                         ? "bg-foreground text-background shadow-md font-bold" 
                         : "bg-bg-card border border-border-subtle text-text-semi-muted hover:text-foreground-pure hover:bg-bg-card-hover"
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                    <span>MacBook Pro</span>
+                    <span>Samsung S24</span>
                   </button>
                 </div>
               </div>
@@ -244,19 +242,12 @@ export default function MarketingPage() {
                     title="Midnight Depth"
                   />
                   <button 
-                    onClick={() => setGradient("transparent")}
-                    className={`w-full aspect-square rounded-xl relative overflow-hidden transition-all duration-200 active:scale-95 cursor-pointer bg-foreground/[0.04] border border-border-subtle ${
-                      gradient === "transparent" ? "ring-2 ring-foreground scale-105" : "hover:scale-105"
+                    onClick={() => setGradient("lavender")}
+                    className={`w-full aspect-square rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] relative transition-all duration-200 active:scale-95 cursor-pointer ${
+                      gradient === "lavender" ? "ring-2 ring-foreground scale-105" : "border border-border-subtle hover:scale-105"
                     }`}
-                    title="Transparent Background"
-                  >
-                    <div className="absolute inset-0 flex flex-wrap p-1.5 gap-0.5 opacity-30">
-                      <div className="w-1.5 h-1.5 bg-foreground rounded-xs" />
-                      <div className="w-1.5 h-1.5 bg-transparent rounded-xs" />
-                      <div className="w-1.5 h-1.5 bg-transparent rounded-xs" />
-                      <div className="w-1.5 h-1.5 bg-foreground rounded-xs" />
-                    </div>
-                  </button>
+                    title="Midnight Lavender"
+                  />
                 </div>
               </div>
 
@@ -444,18 +435,11 @@ export default function MarketingPage() {
                     ? "bg-gradient-to-br from-emerald-400 via-teal-500 to-indigo-600"
                     : gradient === "midnight"
                     ? "bg-gradient-to-br from-indigo-950 via-slate-950 to-[#020617] border border-border-subtle"
-                    : "bg-background border-2 border-dashed border-border-medium"
+                    : "bg-gradient-to-br from-[#667eea] to-[#764ba2]"
                 }`}
-                style={gradient === "transparent" ? {
-                  backgroundImage: `linear-gradient(45deg, ${transparentColor} 25%, transparent 25%), linear-gradient(-45deg, ${transparentColor} 25%, transparent 25%), linear-gradient(45deg, transparent 75%, ${transparentColor} 75%), linear-gradient(-45deg, transparent 75%, ${transparentColor} 75%)`,
-                  backgroundSize: "20px 20px",
-                  backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0"
-                } : undefined}
               >
                 {/* Visual Glassmorphic glows inside canvas */}
-                {gradient !== "transparent" && (
-                  <div className="absolute top-[-20%] left-[-20%] w-[65%] h-[65%] bg-white/20 rounded-full blur-[80px] pointer-events-none" />
-                )}
+                <div className="absolute top-[-20%] left-[-20%] w-[65%] h-[65%] bg-white/20 rounded-full blur-[80px] pointer-events-none" />
 
                 {/* Canvas Grid Overlay */}
                 {gridVisible && (
@@ -506,19 +490,19 @@ export default function MarketingPage() {
                   className="w-full flex flex-col items-center justify-center transition-all duration-500 ease-out z-10"
                   style={{
                     transform: isTilted 
-                      ? device === "macbook"
-                        ? "perspective(1200px) rotateX(10deg) rotateY(-8deg) rotateZ(1deg)"
-                        : "perspective(1200px) rotateX(12deg) rotateY(-12deg) rotateZ(3deg)"
+                      ? "perspective(1200px) rotateX(12deg) rotateY(-12deg) rotateZ(3deg)"
                       : "none"
                   }}
                 >
                   {/* iOS or Android Phone Frame */}
-                  {(device === "iphone" || device === "pixel") && (
+                  {(device === "iphone" || device === "pixel" || device === "samsung") && (
                     <div 
                       className={`w-full max-w-[200px] sm:max-w-[220px] aspect-[9/19.5] shadow-[0_25px_50px_rgba(0,0,0,0.6)] relative transition-all duration-500 overflow-hidden flex flex-col ${
                         device === "iphone"
                           ? "rounded-[40px] border-[5px] border-zinc-800 bg-[#0d0d11] p-1.5"
-                          : "rounded-[34px] border-[5px] border-zinc-700 bg-[#0a0a0c] p-1.5"
+                          : device === "pixel"
+                          ? "rounded-[34px] border-[5px] border-zinc-700 bg-[#0a0a0c] p-1.5"
+                          : "rounded-[36px] border-[5px] border-zinc-800 bg-[#0c0d12] p-1.5"
                       }`}
                     >
                       {/* iPhone Dynamic Island */}
@@ -533,10 +517,19 @@ export default function MarketingPage() {
                         <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-black z-30 flex items-center justify-center border border-zinc-800" />
                       )}
 
+                      {/* Samsung Notch */}
+                      {device === "samsung" && (
+                        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-black z-30 flex items-center justify-center border border-zinc-900" />
+                      )}
+
                       {/* Phone Screen Mock Interface */}
                       <div 
                         className={`flex-1 overflow-hidden relative flex flex-col p-3 transition-all duration-500 ${
-                          device === "iphone" ? "rounded-[32px]" : "rounded-[26px]"
+                          device === "iphone" 
+                            ? "rounded-[32px]" 
+                            : device === "pixel" 
+                            ? "rounded-[26px]" 
+                            : "rounded-[28px]"
                         } bg-[#050508] text-white`}
                       >
                         {/* Status bar */}
@@ -763,186 +756,6 @@ export default function MarketingPage() {
                     </div>
                   )}
 
-                  {/* MacBook Laptop Frame */}
-                  {device === "macbook" && (
-                    <div className="w-full max-w-[420px] sm:max-w-[440px] flex flex-col items-center transition-all duration-500">
-                      {/* Display Screen */}
-                      <div className="w-full aspect-[16/10] rounded-xl border-[6px] border-zinc-900 bg-zinc-950 p-1 shadow-[0_25px_60px_rgba(0,0,0,0.7)] relative overflow-hidden flex flex-col">
-                        {/* Center Notch */}
-                        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-8 h-2.5 rounded-b-md bg-black z-30" />
-
-                        {/* Mock Desktop Screen */}
-                        <div className="flex-1 rounded-sm overflow-hidden bg-[#07070a] border border-white/[0.04] flex flex-col relative select-none">
-                          {/* Ambient background glow */}
-                          <div className="absolute -top-10 -right-10 w-24 h-24 bg-pink-500/5 rounded-full blur-2xl pointer-events-none" />
-                          <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
-
-                          {/* Laptop window control buttons & top status bar */}
-                          <div className="flex justify-between items-center w-full px-3 py-1.5 border-b border-white/[0.05] bg-black/40 backdrop-blur-sm z-10 text-[7px] text-white/50">
-                            <div className="flex gap-1.5 items-center">
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500/80" />
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80" />
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-                            </div>
-                            <span className="font-semibold tracking-wide text-white/70 flex items-center gap-1">
-                              <svg className="w-2 h-2 text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-                              </svg>
-                              console.muckly.io/dashboard
-                            </span>
-                            <div className="flex items-center gap-1.5 text-white/40">
-                              <span>us-east-1</span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            </div>
-                          </div>
-
-                          {/* Two-Column Workspace Layout */}
-                          <div className="flex-1 flex overflow-hidden">
-                            {/* Left Dashboard Sidebar */}
-                            <div className="w-1/4 border-r border-white/[0.05] bg-black/20 p-2 flex flex-col gap-1 text-left">
-                              <div className="flex items-center gap-1 px-1.5 py-1 mb-1 border-b border-white/[0.04]">
-                                <div className="w-3.5 h-3.5 rounded-md bg-gradient-to-r from-indigo-500 to-pink-500 flex items-center justify-center text-[7px] font-black text-white">M</div>
-                                <span className="text-[8px] font-bold text-white">Muckly Cloud</span>
-                              </div>
-                              {[
-                                { active: true, name: "Dashboard", icon: (
-                                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                                  </svg>
-                                )},
-                                { name: "Deployments", icon: (
-                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                  </svg>
-                                )},
-                                { name: "ImageKit CDN", icon: (
-                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                )},
-                                { name: "Billing", icon: (
-                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                )},
-                                { name: "Settings", icon: (
-                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                  </svg>
-                                )}
-                              ].map((item, idx) => (
-                                <div key={idx} className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[8px] font-semibold transition-all cursor-pointer ${
-                                  item.active ? "bg-indigo-600 text-white shadow-md" : "text-white/50 hover:text-white hover:bg-white/[0.02]"
-                                }`}>
-                                  {item.icon}
-                                  <span>{item.name}</span>
-                                </div>
-                              ))}
-                              
-                              <div className="mt-auto border-t border-white/[0.04] pt-2 px-1 text-[7px] text-white/35 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                <span>All systems operational</span>
-                              </div>
-                            </div>
-
-                            {/* Main Display Pane */}
-                            <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto text-left">
-                              {/* Pane Header */}
-                              <div className="flex justify-between items-center border-b border-white/[0.04] pb-1.5">
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold text-white tracking-tight">Overview panel</span>
-                                  <span className="text-[6px] text-white/40 mt-0.5">Real-time operational console</span>
-                                </div>
-                                <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-400/20 text-indigo-400 text-[6px] font-bold tracking-wider uppercase">Live Sync</span>
-                              </div>
-
-                              {/* Three Stat Cards Grid */}
-                              <div className="grid grid-cols-3 gap-2">
-                                {[
-                                  { label: "Active Users", val: "1,842", change: "+12.4%", color: "text-emerald-400" },
-                                  { label: "Response", val: "48ms", change: "-8.2%", color: "text-indigo-400" },
-                                  { label: "Exports", val: "924", change: "+24.5%", color: "text-pink-400" }
-                                ].map((stat, idx) => (
-                                  <div key={idx} className="rounded-lg bg-white/[0.01] border border-white/[0.05] p-2 flex flex-col">
-                                    <span className="text-[6px] text-white/40 font-semibold uppercase">{stat.label}</span>
-                                    <span className="text-xs font-bold text-white mt-1 leading-none">{stat.val}</span>
-                                    <span className={`text-[6px] font-bold ${stat.color} mt-1`}>{stat.change}</span>
-                                  </div>
-                                ))}
-                              </div>
-
-                              {/* SaaS Main Performance Chart */}
-                              <div className="rounded-lg bg-white/[0.01] border border-white/[0.05] p-2 flex flex-col gap-1.5 flex-1 min-h-[60px]">
-                                <div className="flex justify-between items-center text-[6px] text-white/40">
-                                  <span className="font-bold uppercase tracking-wider">Deployment Uptime & Bandwidth</span>
-                                  <span className="text-white/60">Target: 99.99%</span>
-                                </div>
-                                
-                                <div className="w-full flex-1 relative min-h-[40px]">
-                                  {/* Y Axis line guides */}
-                                  <div className="absolute inset-x-0 top-0 h-px border-t border-white/[0.02]" />
-                                  <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px border-t border-white/[0.02]" />
-                                  <div className="absolute inset-x-0 bottom-0 h-px border-t border-white/[0.02]" />
-                                  
-                                  <svg className="w-full h-full" viewBox="0 0 200 40" preserveAspectRatio="none">
-                                    <defs>
-                                      <linearGradient id="svg-chart-fill-purple" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
-                                        <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
-                                      </linearGradient>
-                                      <linearGradient id="svg-chart-fill-cyan" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
-                                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-                                      </linearGradient>
-                                    </defs>
-                                    
-                                    {/* Area 1 (Cyan) */}
-                                    <path d="M 0 40 L 0 32 Q 30 20 60 28 T 120 18 T 170 30 L 200 24 L 200 40 Z" fill="url(#svg-chart-fill-cyan)" />
-                                    {/* Line 1 (Cyan) */}
-                                    <path d="M 0 32 Q 30 20 60 28 T 120 18 T 170 30 L 200 24" fill="none" stroke="#06b6d4" strokeWidth="1" strokeLinecap="round" />
-                                    
-                                    {/* Area 2 (Purple) */}
-                                    <path d="M 0 40 L 0 24 Q 40 10 80 18 T 140 12 T 180 20 L 200 14 L 200 40 Z" fill="url(#svg-chart-fill-purple)" />
-                                    {/* Line 2 (Purple) */}
-                                    <path d="M 0 24 Q 40 10 80 18 T 140 12 T 180 20 L 200 14" fill="none" stroke="#6366f1" strokeWidth="1.2" strokeLinecap="round" />
-                                    
-                                    {/* Active tooltip point */}
-                                    <circle cx="140" cy="12" r="1.5" fill="#f43f5e" />
-                                  </svg>
-                                </div>
-                              </div>
-
-                              {/* Database connection table */}
-                              <div className="flex flex-col gap-1 mt-1">
-                                <span className="text-[6px] font-bold text-white/30 uppercase tracking-widest">Active Services</span>
-                                <div className="grid grid-cols-3 gap-1 text-[7px] text-white/70">
-                                  {[
-                                    { app: "db_neon_prod", latency: "1.2ms" },
-                                    { app: "imagekit_cdn", latency: "14.8ms" },
-                                    { app: "dodo_pay_api", latency: "38.2ms" }
-                                  ].map((serv, idx) => (
-                                    <div key={idx} className="rounded bg-white/[0.01] border border-white/[0.04] p-1 flex items-center justify-between">
-                                      <div className="flex items-center gap-1 overflow-hidden">
-                                        <span className="w-1 h-1 rounded-full bg-emerald-400 shrink-0" />
-                                        <span className="font-bold text-white/90 truncate">{serv.app}</span>
-                                      </div>
-                                      <span className="text-[6px] text-white/40">{serv.latency}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Base stand bottom lip with metallic notch */}
-                      <div className="w-[110%] -ml-[5%] h-2 bg-zinc-800 rounded-b-lg border-t border-zinc-700 shadow-md relative z-20 flex items-center justify-center">
-                        <div className="w-10 h-0.5 bg-zinc-950 rounded-b-sm -mt-0.5" />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -985,7 +798,7 @@ export default function MarketingPage() {
               </div>
               <h4 className="text-xl font-bold text-foreground-pure mb-3">2. Choose Device Frame</h4>
               <p className="text-text-muted leading-relaxed text-sm flex-1">
-                Select your preferred presentation layout. Wrap your screens in pixel-perfect iPhone 15 Pro, Google Pixel 9, or desktop MacBook Pro frames. Customize background gradients and 3D tilts.
+                Select your preferred presentation layout. Wrap your screens in pixel-perfect iPhone 17 Pro, Google Pixel 9 Pro, or Samsung Galaxy S24 frames. Customize background gradients and 3D tilts.
               </p>
             </div>
 
@@ -998,7 +811,7 @@ export default function MarketingPage() {
               </div>
               <h4 className="text-xl font-bold text-foreground-pure mb-3">3. Export Mockup</h4>
               <p className="text-text-muted leading-relaxed text-sm flex-1">
-                Download pristine, high-resolution PNG mockups with a transparent or custom-gradient background in 1-click. Ready to post directly on Dribbble, Twitter, or upload to the App Store.
+                Download pristine, high-resolution PNG mockups with a beautiful gradient, mesh, or solid background in 1-click. Ready to post directly on Dribbble, Twitter, or upload to the App Store.
               </p>
             </div>
 
@@ -1095,7 +908,7 @@ export default function MarketingPage() {
                     <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>All premium frames (MacBook, Tablet, Watch)</span>
+                    <span>All premium mobile frames (iPhone, Pixel, Galaxy S24)</span>
                   </li>
                   <li className="flex items-center gap-3 text-sm text-text-semi-muted">
                     <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -1107,7 +920,7 @@ export default function MarketingPage() {
                     <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>No watermarks & 4K HD output</span>
+                    <span>No watermarks & pristine HD exports</span>
                   </li>
                 </ul>
               </div>

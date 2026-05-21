@@ -172,7 +172,7 @@ export default function PricingPage() {
                   <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>All premium frames (MacBook, Tablet, Watch)</span>
+                  <span>All premium titanium & space-black frames</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm text-text-semi-muted">
                   <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -184,7 +184,7 @@ export default function PricingPage() {
                   <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>No watermarks & 4K HD output</span>
+                  <span>No watermarks & high-definition output</span>
                 </li>
               </ul>
             </div>
@@ -250,7 +250,7 @@ export default function PricingPage() {
                   <td className="p-4 text-center font-bold text-foreground-pure bg-indigo-500/[0.01]">Included</td>
                 </tr>
                 <tr>
-                  <td className="p-4 font-semibold text-text-semi-muted">Premium desktop / tablet / watch frames</td>
+                  <td className="p-4 font-semibold text-text-semi-muted">Premium titanium & space-black finishes</td>
                   <td className="p-4 text-center text-text-dim">Locked</td>
                   <td className="p-4 text-center font-bold text-foreground-pure bg-indigo-500/[0.01]">Included</td>
                 </tr>
@@ -265,7 +265,7 @@ export default function PricingPage() {
                   <td className="p-4 text-center font-bold text-foreground-pure bg-indigo-500/[0.01]">Included</td>
                 </tr>
                 <tr>
-                  <td className="p-4 font-semibold text-text-semi-muted">Custom gradient & transparent backgrounds</td>
+                  <td className="p-4 font-semibold text-text-semi-muted">Custom gradient & complex mesh backgrounds</td>
                   <td className="p-4 text-center text-text-dim">Locked</td>
                   <td className="p-4 text-center font-bold text-foreground-pure bg-indigo-500/[0.01]">Included</td>
                 </tr>
@@ -275,7 +275,7 @@ export default function PricingPage() {
                   <td className="p-4 text-center font-bold text-foreground-pure bg-indigo-500/[0.01]">Included</td>
                 </tr>
                 <tr>
-                  <td className="p-4 font-semibold text-text-semi-muted">High resolution 4K exports</td>
+                  <td className="p-4 font-semibold text-text-semi-muted">High-definition clean PNG exports</td>
                   <td className="p-4 text-center text-text-dim">Locked</td>
                   <td className="p-4 text-center font-bold text-foreground-pure bg-indigo-500/[0.01]">Included</td>
                 </tr>
