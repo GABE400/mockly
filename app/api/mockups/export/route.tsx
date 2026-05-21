@@ -61,6 +61,9 @@ export async function POST(request: NextRequest) {
       paddingLevel, 
       textOverlay, 
       textPosition, 
+      textFontSize,
+      textColor,
+      textWeight,
       nodes,
       // Legacy backward compatibility parameters
       screenshotUrl,
@@ -106,11 +109,25 @@ export async function POST(request: NextRequest) {
         )
       );
 
-    if (user.plan === "free" && monthExports.length >= 5) {
+    if (user.plan === "free" && user.role !== "admin" && monthExports.length >= 5) {
       return NextResponse.json(
         { error: "Export limit reached. Please upgrade to Pro to unlock unlimited exports." },
         { status: 403 }
       );
+    }
+
+    // Read local Muckly logo for watermarking overlay
+    let logoBase64 = "";
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const logoPath = path.join(process.cwd(), "public", "logo.png");
+      if (fs.existsSync(logoPath)) {
+        const logoBuffer = fs.readFileSync(logoPath);
+        logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`;
+      }
+    } catch (e) {
+      console.error("Failed to read logo.png for watermarking:", e);
     }
 
     // 4. Batch fetch screenshot and font buffers concurrently
@@ -147,11 +164,36 @@ export async function POST(request: NextRequest) {
       Promise.all(nodesPromises),
     ]);
 
+    function isLightColor(hex: string) {
+      if (!hex) return false;
+      const cleaned = hex.replace("#", "");
+      if (cleaned.length === 3) {
+        const r = parseInt(cleaned[0] + cleaned[0], 16);
+        const g = parseInt(cleaned[1] + cleaned[1], 16);
+        const b = parseInt(cleaned[2] + cleaned[2], 16);
+        return (r * 0.299 + g * 0.587 + b * 0.114) > 186;
+      }
+      if (cleaned.length === 6) {
+        const r = parseInt(cleaned.substring(0, 2), 16);
+        const g = parseInt(cleaned.substring(2, 4), 16);
+        const b = parseInt(cleaned.substring(4, 6), 16);
+        return (r * 0.299 + g * 0.587 + b * 0.114) > 186;
+      }
+      return false;
+    }
+
     // 5. Setup rendering properties based on specifications
     const bgStyleValue =
       customBgColor ||
       BACKEND_BG_STYLES[background as keyof typeof BACKEND_BG_STYLES] || 
       BACKEND_BG_STYLES.sunset;
+
+    let paddingValue = 48; // Default Standard
+    if (paddingLevel === "Compact") paddingValue = 20;
+    else if (paddingLevel === "Spacious") paddingValue = 80;
+
+    const scaleFactor = (1200 - 2 * paddingValue) / 1200;
+    const isBgLight = background === "white" || background === "candy" || isLightColor(customBgColor);
 
     // 6. Compile SVG string utilizing Satori
     const svg = await satori(
@@ -192,246 +234,327 @@ export async function POST(request: NextRequest) {
           ))}
         </div>
 
-        {/* Global Typography Headline Overlay */}
-        {textOverlay && (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: textPosition === "Top" ? "40px" : "auto",
-              bottom: textPosition === "Bottom" ? "40px" : "auto",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 40,
-            }}
-          >
-            <span
-              style={{
-                fontSize: "32px",
-                fontWeight: "bold",
-                color: background === "white" || bgStyleValue.toLowerCase() === "#ffffff" ? "#000000" : "#ffffff",
-                textShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
-                letterSpacing: "-0.5px",
-              }}
-            >
-              {textOverlay}
-            </span>
-          </div>
-        )}
-
-        {/* Render each absolute coordinate mockup node (sorted so that the active/selected node is drawn on top) */}
-        {fetchedNodes
-          .sort((a: any, b: any) => (a.selected ? 1 : 0) - (b.selected ? 1 : 0))
-          .map((node: any) => {
-          let bezelBorderColor = "#1e2029"; // Dark finish
-          if (node.frameColor === "Light") bezelBorderColor = "#cbd5e1";
-          else if (node.frameColor === "Gold") bezelBorderColor = "#b5942b";
-          else if (node.frameColor === "Space Black") bezelBorderColor = "#0d0d11";
-          else if (node.frameColor === "Rose Gold") bezelBorderColor = "#f3d1c9";
-
-          // Satori 2D Skew Transformations matching Client perspective tilts
-          let satoriTransform = "scale(0.92)";
-          if (node.tilt === "Left Tilt") {
-            satoriTransform = "rotate(-8deg) translateX(-15px) translateY(-5px) scale(0.85)";
-          } else if (node.tilt === "Right Tilt") {
-            satoriTransform = "rotate(8deg) translateX(15px) translateY(-5px) scale(0.85)";
-          } else if (node.tilt === "Floating") {
-            satoriTransform = "translateY(-20px) scale(0.88)";
-          }
-
-          // Global drop shadow settings
-          let shadowStyle = "0 20px 30px rgba(0, 0, 0, 0.35)";
-          if (shadowIntensity === "None") shadowStyle = "none";
-          else if (shadowIntensity === "Soft") shadowStyle = "0 15px 35px -8px rgba(0, 0, 0, 0.35)";
-          else if (shadowIntensity === "Dramatic") shadowStyle = "0 35px 70px -15px rgba(0, 0, 0, 0.65), 0 15px 30px -10px rgba(0, 0, 0, 0.45)";
-
-          const renderDeviceFeature = () => {
-            if (node.deviceFrame === "iPhone 15 Pro") {
-              return (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "8px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "42%",
-                    height: "16px",
-                    backgroundColor: "#000000",
-                    borderRadius: "8px",
-                    zIndex: 30,
-                  }}
-                />
-              );
-            }
-            if (node.deviceFrame === "iPhone 14") {
-              return (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "0px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "52%",
-                    height: "18px",
-                    backgroundColor: "#000000",
-                    borderBottomLeftRadius: "10px",
-                    borderBottomRightRadius: "10px",
-                    zIndex: 30,
-                  }}
-                />
-              );
-            }
-            if (node.deviceFrame === "Pixel 8") {
-              return (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "10px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "10px",
-                    height: "10px",
-                    backgroundColor: "#000000",
-                    borderRadius: "50%",
-                    zIndex: 30,
-                  }}
-                />
-              );
-            }
-            if (node.deviceFrame === "Galaxy S24") {
-              return (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "8px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "8px",
-                    height: "8px",
-                    backgroundColor: "#000000",
-                    borderRadius: "50%",
-                    zIndex: 30,
-                  }}
-                />
-              );
-            }
-            return null;
-          };
-
-          return (
+        {/* Scaled Content Container to apply paddingLevel visually */}
+        <div
+          style={{
+            position: "absolute",
+            left: `${paddingValue}px`,
+            top: `${paddingValue}px`,
+            width: "1200px",
+            height: "675px",
+            display: "flex",
+            transform: `scale(${scaleFactor})`,
+            transformOrigin: "top left",
+          }}
+        >
+          {/* Global Typography Headline Overlay */}
+          {textOverlay && (
             <div
-              key={node.id}
               style={{
                 position: "absolute",
-                left: `${node.x}px`,
-                top: `${node.y}px`,
-                width: "172px",
-                height: "364px",
+                left: 0,
+                right: 0,
+                top: textPosition === "Top" ? "40px" : "auto",
+                bottom: textPosition === "Bottom" ? "40px" : "auto",
                 display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
                 justifyContent: "center",
-                transform: satoriTransform,
-                boxShadow: shadowStyle,
-                borderRadius: "38px",
-                zIndex: 10,
+                alignItems: "center",
+                zIndex: 40,
               }}
             >
-              {/* Bezel finish accent wrapper */}
-              <div
+              <span
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: "38px",
-                  border: `10px solid ${bezelBorderColor}`,
-                  backgroundColor: "#0c0d12",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  position: "relative",
+                  fontSize: textFontSize ? `${textFontSize}px` : "32px",
+                  fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? "bold" : "extrabold",
+                  color: textColor || (isBgLight ? "#000000" : "#ffffff"),
+                  textShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+                  letterSpacing: "-0.5px",
                 }}
               >
-                {/* Physical side buttons */}
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "-12px",
-                    top: "70px",
-                    width: "2px",
-                    height: "22px",
-                    backgroundColor: bezelBorderColor,
-                    borderRadius: "2px 0 0 2px",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "-12px",
-                    top: "98px",
-                    width: "2px",
-                    height: "22px",
-                    backgroundColor: bezelBorderColor,
-                    borderRadius: "2px 0 0 2px",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    right: "-12px",
-                    top: "84px",
-                    width: "2px",
-                    height: "36px",
-                    backgroundColor: bezelBorderColor,
-                    borderRadius: "0 2px 2px 0",
-                  }}
-                />
+                {textOverlay}
+              </span>
+            </div>
+          )}
 
-                {renderDeviceFeature()}
+          {/* Render each absolute coordinate mockup node (sorted so that the active/selected node is drawn on top) */}
+          {fetchedNodes
+            .sort((a: any, b: any) => (a.selected ? 1 : 0) - (b.selected ? 1 : 0))
+            .map((node: any) => {
+            let bezelBorderColor = "#1e2029"; // Dark finish
+            if (node.frameColor === "Light") bezelBorderColor = "#cbd5e1";
+            else if (node.frameColor === "Gold") bezelBorderColor = "#b5942b";
+            else if (node.frameColor === "Space Black") bezelBorderColor = "#0d0d11";
+            else if (node.frameColor === "Rose Gold") bezelBorderColor = "#f3d1c9";
 
-                {/* Screenshot layout */}
+            // Satori 2D Skew Transformations matching Client perspective tilts
+            let satoriTransform = "scale(0.92)";
+            if (node.tilt === "Left Tilt") {
+              satoriTransform = "rotate(-8deg) translateX(-15px) translateY(-5px) scale(0.85)";
+            } else if (node.tilt === "Right Tilt") {
+              satoriTransform = "rotate(8deg) translateX(15px) translateY(-5px) scale(0.85)";
+            } else if (node.tilt === "Floating") {
+              satoriTransform = "translateY(-20px) scale(0.88)";
+            }
+
+            // Global drop shadow settings
+            let shadowStyle = "0 20px 30px rgba(0, 0, 0, 0.35)";
+            if (shadowIntensity === "None") shadowStyle = "none";
+            else if (shadowIntensity === "Soft") shadowStyle = "0 15px 35px -8px rgba(0, 0, 0, 0.35)";
+            else if (shadowIntensity === "Dramatic") shadowStyle = "0 35px 70px -15px rgba(0, 0, 0, 0.65), 0 15px 30px -10px rgba(0, 0, 0, 0.45)";
+
+            const renderDeviceFeature = () => {
+              if (
+                node.deviceFrame === "iPhone 17 Pro" ||
+                node.deviceFrame === "iPhone 16 Pro" ||
+                node.deviceFrame === "iPhone 15 Pro"
+              ) {
+                return (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: "42%",
+                      height: "16px",
+                      backgroundColor: "#000000",
+                      borderRadius: "8px",
+                      zIndex: 30,
+                    }}
+                  />
+                );
+              }
+              if (
+                node.deviceFrame === "iPhone 14" ||
+                node.deviceFrame === "iPhone 13"
+              ) {
+                return (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "0px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: "52%",
+                      height: "18px",
+                      backgroundColor: "#000000",
+                      borderBottomLeftRadius: "10px",
+                      borderBottomRightRadius: "10px",
+                      zIndex: 30,
+                    }}
+                  />
+                );
+              }
+              if (node.deviceFrame === "Google Pixel 9 Pro") {
+                return (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: "10px",
+                      height: "10px",
+                      backgroundColor: "#000000",
+                      borderRadius: "50%",
+                      zIndex: 30,
+                    }}
+                  />
+                );
+              }
+              if (node.deviceFrame === "Samsung Galaxy S24") {
+                return (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: "8px",
+                      height: "8px",
+                      backgroundColor: "#000000",
+                      borderRadius: "50%",
+                      zIndex: 30,
+                    }}
+                  />
+                );
+              }
+              if (node.deviceFrame === "Sony Xperia 1 VI") {
+                return (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "6px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: "8px",
+                      height: "8px",
+                      backgroundColor: "#000000",
+                      borderRadius: "50%",
+                      zIndex: 30,
+                    }}
+                  />
+                );
+              }
+              return null;
+            };
+
+            return (
+              <div
+                key={node.id}
+                style={{
+                  position: "absolute",
+                  left: `${node.x}px`,
+                  top: `${node.y}px`,
+                  width: "172px",
+                  height: "364px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transform: satoriTransform,
+                  boxShadow: shadowStyle,
+                  borderRadius: "38px",
+                  zIndex: 10,
+                }}
+              >
+                {/* Bezel finish accent wrapper */}
                 <div
                   style={{
                     width: "100%",
                     height: "100%",
-                    borderRadius: "28px",
+                    borderRadius: "38px",
+                    border: `10px solid ${bezelBorderColor}`,
+                    backgroundColor: "#0c0d12",
                     display: "flex",
+                    flexDirection: "column",
                     overflow: "hidden",
-                    backgroundColor: "#161823",
+                    position: "relative",
                   }}
                 >
-                  {node.base64 ? (
-                    <img
-                      src={node.base64}
-                      alt="Screenshot Frame"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: "#0c0d12",
-                        padding: "16px",
-                      }}
-                    >
-                      <span style={{ fontSize: "8px", fontWeight: "bold", color: "rgba(255,255,255,0.4)" }}>NO ASSET</span>
-                    </div>
-                  )}
+                  {/* Physical side buttons */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "-12px",
+                      top: "70px",
+                      width: "2px",
+                      height: "22px",
+                      backgroundColor: bezelBorderColor,
+                      borderRadius: "2px 0 0 2px",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "-12px",
+                      top: "98px",
+                      width: "2px",
+                      height: "22px",
+                      backgroundColor: bezelBorderColor,
+                      borderRadius: "2px 0 0 2px",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: "-12px",
+                      top: "84px",
+                      width: "2px",
+                      height: "36px",
+                      backgroundColor: bezelBorderColor,
+                      borderRadius: "0 2px 2px 0",
+                    }}
+                  />
+
+                  {renderDeviceFeature()}
+
+                  {/* Screenshot layout */}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "28px",
+                      display: "flex",
+                      overflow: "hidden",
+                      backgroundColor: "#161823",
+                    }}
+                  >
+                    {node.base64 ? (
+                      <img
+                        src={node.base64}
+                        alt="Screenshot Frame"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "#0c0d12",
+                          padding: "16px",
+                        }}
+                      >
+                        <span style={{ fontSize: "8px", fontWeight: "bold", color: "rgba(255,255,255,0.4)" }}>NO ASSET</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        
+        {/* Server Side Watermark for Free Plan users (exempting Admins) */}
+        {user.plan === "free" && user.role !== "admin" && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "24px",
+              right: "24px",
+              zIndex: 100,
+              display: "flex",
+              alignItems: "center",
+              padding: "8px 14px",
+              borderRadius: "10px",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              backgroundColor: "rgba(15, 23, 42, 0.45)",
+            }}
+          >
+            {logoBase64 && (
+              <img
+                src={logoBase64}
+                alt="Muckly Logo"
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  marginRight: "8px",
+                  borderRadius: "5px",
+                  objectFit: "cover",
+                }}
+              />
+            )}
+            <span
+              style={{
+                fontSize: "10px",
+                fontWeight: 900,
+                letterSpacing: "1.2px",
+                color: "#ffffff",
+                textTransform: "uppercase",
+              }}
+            >
+              Muckly
+            </span>
+          </div>
+        )}
       </div>,
       {
         width: 1200,

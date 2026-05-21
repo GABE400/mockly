@@ -133,6 +133,228 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
   // Active user thumbnail preview lightbox modal
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // --- Interactive SVG Growth Chart Aggregations ---
+  const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null);
+
+  const { chartData, maxVal } = useMemo(() => {
+    // Generate dates for the last 7 days (including today)
+    const days: Date[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      days.push(d);
+    }
+
+    const firstDayTime = days[0].getTime();
+    let baseTotalUsers = 0;
+    let baseProUsers = 0;
+
+    // Users registered before our 7 day window
+    users.forEach((u) => {
+      const t = new Date(u.createdAt).getTime();
+      if (t < firstDayTime) {
+        baseTotalUsers++;
+        if (u.plan === "pro") {
+          baseProUsers++;
+        }
+      }
+    });
+
+    const dailySignups = Array(7).fill(0);
+    const dailyProSignups = Array(7).fill(0);
+
+    // Grouping registrations by day
+    users.forEach((u) => {
+      const t = new Date(u.createdAt).getTime();
+      for (let i = 0; i < 7; i++) {
+        const start = days[i].getTime();
+        const end = start + 24 * 60 * 60 * 1000;
+        if (t >= start && t < end) {
+          dailySignups[i]++;
+          if (u.plan === "pro") {
+            dailyProSignups[i]++;
+          }
+          break;
+        }
+      }
+    });
+
+    const dataList = [];
+    let currentTotal = baseTotalUsers;
+    let currentPro = baseProUsers;
+
+    for (let i = 0; i < 7; i++) {
+      currentTotal += dailySignups[i];
+      currentPro += dailyProSignups[i];
+
+      const label = days[i].toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+
+      dataList.push({
+        label,
+        totalUsers: currentTotal,
+        proUsers: currentPro,
+      });
+    }
+
+    const max = Math.max(...dataList.map((d) => d.totalUsers), 5);
+    return { chartData: dataList, maxVal: max };
+  }, [users]);
+
+  // Chart configuration bounds
+  const paddingLeft = 45;
+  const paddingRight = 20;
+  const paddingTop = 25;
+  const paddingBottom = 35;
+  const chartWidth = 600 - paddingLeft - paddingRight; // 535
+  const chartHeight = 240 - paddingTop - paddingBottom; // 180
+
+  const getCoordinates = (val: number, index: number) => {
+    const x = paddingLeft + (index / 6) * chartWidth;
+    const y = paddingTop + chartHeight - (val / maxVal) * chartHeight;
+    return { x, y };
+  };
+
+  const totalPoints = useMemo(() => chartData.map((d, i) => getCoordinates(d.totalUsers, i)), [chartData, maxVal]);
+  const proPoints = useMemo(() => chartData.map((d, i) => getCoordinates(d.proUsers, i)), [chartData, maxVal]);
+
+  const getBezierPath = (points: { x: number; y: number }[]) => {
+    if (points.length === 0) return "";
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const cp1x = p0.x + (p1.x - p0.x) * 0.4;
+      const cp1y = p0.y;
+      const cp2x = p0.x + (p1.x - p0.x) * 0.6;
+      const cp2y = p1.y;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+    }
+    return d;
+  };
+
+  const getAreaPath = (points: { x: number; y: number }[]) => {
+    if (points.length === 0) return "";
+    const linePath = getBezierPath(points);
+    const firstPoint = points[0];
+    const lastPoint = points[points.length - 1];
+    const bottomY = paddingTop + chartHeight;
+    return `${linePath} L ${lastPoint.x} ${bottomY} L ${firstPoint.x} ${bottomY} Z`;
+  };
+
+  const totalUsersPath = useMemo(() => getBezierPath(totalPoints), [totalPoints]);
+  const totalUsersAreaPath = useMemo(() => getAreaPath(totalPoints), [totalPoints]);
+  const proUsersPath = useMemo(() => getBezierPath(proPoints), [proPoints]);
+  const proUsersAreaPath = useMemo(() => getAreaPath(proPoints), [proPoints]);
+
+  const yTicks = useMemo(() => {
+    const ticks = [];
+    const step = maxVal / 4;
+    for (let i = 0; i <= 4; i++) {
+      ticks.push(Math.round(i * step));
+    }
+    return Array.from(new Set(ticks));
+  }, [maxVal]);
+
+  // --- SVG Device Popularity Bar Chart ---
+  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+
+  const deviceCounts = useMemo(() => {
+    const counts = { iphone: 0, pixel: 0, macbook: 0 };
+    mockups.forEach((m) => {
+      const dev = (m.deviceFrame || "").toLowerCase();
+      if (dev.includes("iphone") || dev.includes("phone")) {
+        counts.iphone++;
+      } else if (dev.includes("pixel")) {
+        counts.pixel++;
+      } else {
+        counts.macbook++;
+      }
+    });
+
+    const data = [
+      { name: "iPhone 16 Pro", count: counts.iphone },
+      { name: "Pixel 9 Pro", count: counts.pixel },
+      { name: "MacBook Pro", count: counts.macbook },
+    ];
+
+    const max = Math.max(...data.map((d) => d.count), 5);
+    return { data, maxBarVal: max };
+  }, [mockups]);
+
+  // Bar Chart Configuration Bounds
+  const barPaddingLeft = 40;
+  const barPaddingRight = 20;
+  const barPaddingTop = 25;
+  const barPaddingBottom = 35;
+  const barChartWidth = 400 - barPaddingLeft - barPaddingRight; // 340
+  const barChartHeight = 240 - barPaddingTop - barPaddingBottom; // 180
+
+  const barWidth = 44;
+  const barGap = (barChartWidth - barWidth * 3) / 4;
+
+  const barYTicks = useMemo(() => {
+    const ticks = [];
+    const step = deviceCounts.maxBarVal / 4;
+    for (let i = 0; i <= 4; i++) {
+      ticks.push(Math.round(i * step));
+    }
+    return Array.from(new Set(ticks));
+  }, [deviceCounts.maxBarVal]);
+
+  // --- Data Export Utilities ---
+  const downloadFile = (content: string, filename: string, contentType: string) => {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportUsersCSV = () => {
+    const headers = ["ID", "Name", "Email", "Plan", "Registered At", "Mockup Count"];
+    const rows = filteredUsers.map((u) => [
+      u.id,
+      `"${u.name.replace(/"/g, '""')}"`,
+      u.email,
+      u.plan,
+      u.createdAt,
+      u.mockupCount,
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    downloadFile(csvContent, "muckly-users-export.csv", "text/csv;charset=utf-8;");
+  };
+
+  const exportUsersJSON = () => {
+    const jsonContent = JSON.stringify(filteredUsers, null, 2);
+    downloadFile(jsonContent, "muckly-users-export.json", "application/json;charset=utf-8;");
+  };
+
+  const exportMockupsCSV = () => {
+    const headers = ["ID", "Title", "Creator Email", "Device Model", "Screenshot URL", "Mockup URL", "Generated At"];
+    const rows = filteredMockups.map((m) => [
+      m.id,
+      `"${(m.title || "Untitled").replace(/"/g, '""')}"`,
+      m.userEmail,
+      m.deviceFrame || "N/A",
+      m.screenshotUrl || "",
+      m.mockupUrl || "",
+      m.createdAt,
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    downloadFile(csvContent, "muckly-mockups-export.csv", "text/csv;charset=utf-8;");
+  };
+
+  const exportMockupsJSON = () => {
+    const jsonContent = JSON.stringify(filteredMockups, null, 2);
+    downloadFile(jsonContent, "muckly-mockups-export.json", "application/json;charset=utf-8;");
+  };
+
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden transition-colors duration-300">
       
@@ -218,7 +440,7 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
         </section>
 
         {/* Statistics Cards Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           
           {/* Card 1: Total Users */}
           <div className="border border-border-medium bg-bg-card/50 backdrop-blur-sm rounded-3xl p-6 relative overflow-hidden shadow-xl flex flex-col text-left group hover:border-indigo-500/20 transition-all duration-300">
@@ -276,6 +498,306 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
             <span className="text-[10px] text-text-dim mt-2 block">Active recurring billing plan users</span>
           </div>
 
+        </section>
+
+        {/* Visual SVG Analytics Section */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+          
+          {/* Growth Analytics Curve */}
+          <div className="lg:col-span-2 border border-border-medium bg-bg-card/50 backdrop-blur-sm rounded-3xl p-6 relative shadow-xl flex flex-col text-left group hover:border-indigo-500/20 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-foreground-pure tracking-tight">Platform Growth Timeline</h3>
+              <p className="text-[11px] text-text-dim">Cumulative creator registrations vs. Pro subscribers (last 7 days)</p>
+            </div>
+
+            <div className="relative w-full h-[240px]">
+              <svg viewBox="0 0 600 240" className="w-full h-full select-none" preserveAspectRatio="none">
+                <defs>
+                  {/* Glowing translucent area gradients */}
+                  <linearGradient id="rose-area-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0" />
+                  </linearGradient>
+                  <linearGradient id="indigo-area-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
+
+                {/* Y-Axis Gridlines & Ticks */}
+                {yTicks.map((tick, i) => {
+                  const y = paddingTop + chartHeight - (tick / maxVal) * chartHeight;
+                  return (
+                    <g key={i} className="opacity-60 transition-all duration-300">
+                      <line
+                        x1={paddingLeft}
+                        y1={y}
+                        x2={paddingLeft + chartWidth}
+                        y2={y}
+                        stroke="var(--grid-line)"
+                        strokeWidth="1"
+                        strokeDasharray="4 4"
+                      />
+                      <text
+                        x={paddingLeft - 10}
+                        y={y + 3.5}
+                        textAnchor="end"
+                        className="fill-text-dim text-[9px] font-mono font-semibold"
+                      >
+                        {tick}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* X-Axis Ticks */}
+                {chartData.map((d, i) => {
+                  const x = paddingLeft + (i / 6) * chartWidth;
+                  return (
+                    <g key={i}>
+                      <line
+                        x1={x}
+                        y1={paddingTop}
+                        x2={x}
+                        y2={paddingTop + chartHeight}
+                        stroke="var(--grid-line)"
+                        strokeWidth="0.5"
+                        className="opacity-15"
+                      />
+                      <text
+                        x={x}
+                        y={paddingTop + chartHeight + 16}
+                        textAnchor="middle"
+                        className="fill-text-muted text-[9px] font-bold tracking-tight"
+                      >
+                        {d.label}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Curve Translucent Fills */}
+                <path d={totalUsersAreaPath} fill="url(#rose-area-grad)" className="transition-all duration-500 ease-in-out" />
+                <path d={proUsersAreaPath} fill="url(#indigo-area-grad)" className="transition-all duration-500 ease-in-out" />
+
+                {/* Bezier Stroke Curves */}
+                <path
+                  d={totalUsersPath}
+                  fill="none"
+                  stroke="#f43f5e"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  className="transition-all duration-500 ease-in-out"
+                />
+                <path
+                  d={proUsersPath}
+                  fill="none"
+                  stroke="#6366f1"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  className="transition-all duration-500 ease-in-out"
+                />
+
+                {/* Guide vertical dashed line when hovering */}
+                {hoveredPointIndex !== null && (
+                  <line
+                    x1={totalPoints[hoveredPointIndex].x}
+                    y1={paddingTop}
+                    x2={totalPoints[hoveredPointIndex].x}
+                    y2={paddingTop + chartHeight}
+                    stroke="var(--border-medium)"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 4"
+                  />
+                )}
+
+                {/* Static Anchor Circles (Highlighted on hover) */}
+                {chartData.map((_, i) => {
+                  const isHovered = hoveredPointIndex === i;
+                  return (
+                    <g key={i}>
+                      <circle
+                        cx={totalPoints[i].x}
+                        cy={totalPoints[i].y}
+                        r={isHovered ? 6 : 3.5}
+                        fill="#f43f5e"
+                        stroke="var(--bg-card)"
+                        strokeWidth={isHovered ? 2.5 : 1.5}
+                        className="transition-all duration-200"
+                      />
+                      <circle
+                        cx={proPoints[i].x}
+                        cy={proPoints[i].y}
+                        r={isHovered ? 6 : 3.5}
+                        fill="#6366f1"
+                        stroke="var(--bg-card)"
+                        strokeWidth={isHovered ? 2.5 : 1.5}
+                        className="transition-all duration-200"
+                      />
+                    </g>
+                  );
+                })}
+
+                {/* Invisible trigger Zones */}
+                {chartData.map((_, i) => {
+                  const triggerW = chartWidth / 6;
+                  const triggerX = totalPoints[i].x - triggerW / 2;
+                  return (
+                    <rect
+                      key={i}
+                      x={triggerX}
+                      y={paddingTop}
+                      width={triggerW}
+                      height={chartHeight}
+                      fill="transparent"
+                      className="cursor-pointer"
+                      onMouseEnter={() => setHoveredPointIndex(i)}
+                      onMouseLeave={() => setHoveredPointIndex(null)}
+                    />
+                  );
+                })}
+              </svg>
+
+              {/* Floating Responsive Tooltip */}
+              {hoveredPointIndex !== null && (
+                <div 
+                  className="absolute -translate-x-1/2 -translate-y-full bg-bg-card/90 border border-border-medium rounded-2xl p-3 shadow-2xl z-20 pointer-events-none text-xs text-left animate-fade-in backdrop-blur-md min-w-[130px]"
+                  style={{
+                    left: `${(totalPoints[hoveredPointIndex].x / 600) * 100}%`,
+                    top: `${((Math.min(totalPoints[hoveredPointIndex].y, proPoints[hoveredPointIndex].y) - 14) / 240) * 100}%`
+                  }}
+                >
+                  <div className="font-bold text-foreground-pure mb-1">
+                    {chartData[hoveredPointIndex].label}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-text-semi-muted mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                    <span>Total Creators: <strong>{chartData[hoveredPointIndex].totalUsers}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-text-semi-muted">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                    <span>Pro Subscribers: <strong>{chartData[hoveredPointIndex].proUsers}</strong></span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bar Chart Device Distribution */}
+          <div className="border border-border-medium bg-bg-card/50 backdrop-blur-sm rounded-3xl p-6 relative shadow-xl flex flex-col text-left group hover:border-pink-500/20 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-pink-500/20 to-transparent" />
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-foreground-pure tracking-tight">Template Popularity</h3>
+              <p className="text-[11px] text-text-dim">Mockup assets exported by device outline</p>
+            </div>
+
+            <div className="relative w-full h-[240px]">
+              <svg viewBox="0 0 400 240" className="w-full h-full select-none" preserveAspectRatio="none">
+                <defs>
+                  {/* Glowing vertical bar linear gradients */}
+                  <linearGradient id="bar-iphone-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="100%" stopColor="#a855f7" />
+                  </linearGradient>
+                  <linearGradient id="bar-pixel-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#a855f7" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                  <linearGradient id="bar-macbook-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ec4899" />
+                    <stop offset="100%" stopColor="#f43f5e" />
+                  </linearGradient>
+                </defs>
+
+                {/* Y-Axis Gridlines & Ticks */}
+                {barYTicks.map((tick, i) => {
+                  const y = barPaddingTop + barChartHeight - (tick / deviceCounts.maxBarVal) * barChartHeight;
+                  return (
+                    <g key={i} className="opacity-60 transition-all duration-300">
+                      <line
+                        x1={barPaddingLeft}
+                        y1={y}
+                        x2={barPaddingLeft + barChartWidth}
+                        y2={y}
+                        stroke="var(--grid-line)"
+                        strokeWidth="1"
+                        strokeDasharray="4 4"
+                      />
+                      <text
+                        x={barPaddingLeft - 10}
+                        y={y + 3.5}
+                        textAnchor="end"
+                        className="fill-text-dim text-[9px] font-mono font-semibold"
+                      >
+                        {tick}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Draw Columns */}
+                {deviceCounts.data.map((d, i) => {
+                  const x = barPaddingLeft + barGap + i * (barWidth + barGap);
+                  const valHeight = (d.count / deviceCounts.maxBarVal) * barChartHeight;
+                  const y = barPaddingTop + barChartHeight - valHeight;
+                  const isHovered = hoveredBarIndex === i;
+
+                  // Pick gradient definition based on index
+                  const gradId = i === 0 ? "url(#bar-iphone-grad)" : i === 1 ? "url(#bar-pixel-grad)" : "url(#bar-macbook-grad)";
+
+                  return (
+                    <g key={i}>
+                      {/* Interactive Bar capsule */}
+                      <rect
+                        x={x}
+                        y={y}
+                        width={barWidth}
+                        height={Math.max(valHeight, 4)} // Ensure at least tiny pill shows if count is 0
+                        rx="6"
+                        ry="6"
+                        fill={gradId}
+                        className="transition-all duration-300 cursor-pointer shadow-md"
+                        style={{
+                          filter: isHovered ? "brightness(1.1) drop-shadow(0 4px 12px rgba(236,72,153,0.15))" : "none"
+                        }}
+                        onMouseEnter={() => setHoveredBarIndex(i)}
+                        onMouseLeave={() => setHoveredBarIndex(null)}
+                      />
+                      {/* Axis labels */}
+                      <text
+                        x={x + barWidth / 2}
+                        y={barPaddingTop + barChartHeight + 16}
+                        textAnchor="middle"
+                        className="fill-text-muted text-[9px] font-bold tracking-tight"
+                      >
+                        {d.name.split(" ")[0]}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+
+              {/* Floating Bar Tooltip */}
+              {hoveredBarIndex !== null && (
+                <div 
+                  className="absolute -translate-x-1/2 -translate-y-full bg-bg-card/90 border border-border-medium rounded-2xl p-3 shadow-2xl z-20 pointer-events-none text-xs text-left animate-fade-in backdrop-blur-md min-w-[120px]"
+                  style={{
+                    left: `${((barPaddingLeft + barGap + hoveredBarIndex * (barWidth + barGap) + barWidth / 2) / 400) * 100}%`,
+                    top: `${((barPaddingTop + barChartHeight - (deviceCounts.data[hoveredBarIndex].count / deviceCounts.maxBarVal) * barChartHeight - 14) / 240) * 100}%`
+                  }}
+                >
+                  <div className="font-bold text-foreground-pure mb-1">
+                    {deviceCounts.data[hoveredBarIndex].name}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-text-semi-muted">
+                    <span className="w-2 h-2 rounded-full bg-pink-500 shrink-0" />
+                    <span>Exports: <strong>{deviceCounts.data[hoveredBarIndex].count}</strong></span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </section>
 
         {/* Dashboard Tabs Selectors */}
@@ -355,6 +877,26 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
                     <option value="mockups-desc" className="bg-background">Highest Exports</option>
                     <option value="mockups-asc" className="bg-background">Lowest Exports</option>
                   </select>
+                </div>
+
+                {/* Export Actions */}
+                <div className="flex items-center gap-1 border border-border-medium bg-bg-card/20 rounded-full px-2.5 py-1 text-xs select-none">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider mr-1">Export:</span>
+                  <button
+                    onClick={exportUsersCSV}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-bold text-text-muted hover:text-foreground-pure hover:bg-foreground/[0.04] transition-all cursor-pointer"
+                    title="Export filtered users to CSV"
+                  >
+                    CSV
+                  </button>
+                  <span className="w-px h-3 bg-border-medium" />
+                  <button
+                    onClick={exportUsersJSON}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-bold text-text-muted hover:text-foreground-pure hover:bg-foreground/[0.04] transition-all cursor-pointer"
+                    title="Export filtered users to JSON"
+                  >
+                    JSON
+                  </button>
                 </div>
 
               </div>
@@ -452,19 +994,44 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
                 />
               </div>
 
-              {/* Device filter Dropdown */}
-              <div className="flex items-center gap-1.5 border border-border-medium bg-bg-card/20 rounded-full px-3 py-1.5 text-xs text-left w-full sm:w-auto self-start">
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Device:</span>
-                <select
-                  value={mockupDeviceFilter}
-                  onChange={(e) => setMockupDeviceFilter(e.target.value)}
-                  className="bg-transparent text-foreground-pure font-semibold focus:outline-none cursor-pointer pr-1 w-full sm:w-auto"
-                >
-                  <option value="all" className="bg-background">All Devices</option>
-                  {distinctDevices.map((dev) => (
-                    <option key={dev} value={dev} className="bg-background capitalize">{dev}</option>
-                  ))}
-                </select>
+              {/* Filters and Actions */}
+              <div className="flex flex-wrap gap-2.5 items-center justify-start sm:justify-end">
+                
+                {/* Device filter Dropdown */}
+                <div className="flex items-center gap-1.5 border border-border-medium bg-bg-card/20 rounded-full px-3 py-1.5 text-xs text-left">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Device:</span>
+                  <select
+                    value={mockupDeviceFilter}
+                    onChange={(e) => setMockupDeviceFilter(e.target.value)}
+                    className="bg-transparent text-foreground-pure font-semibold focus:outline-none cursor-pointer pr-1"
+                  >
+                    <option value="all" className="bg-background">All Devices</option>
+                    {distinctDevices.map((dev) => (
+                      <option key={dev} value={dev} className="bg-background capitalize">{dev}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Export Actions */}
+                <div className="flex items-center gap-1 border border-border-medium bg-bg-card/20 rounded-full px-2.5 py-1 text-xs select-none">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider mr-1">Export:</span>
+                  <button
+                    onClick={exportMockupsCSV}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-bold text-text-muted hover:text-foreground-pure hover:bg-foreground/[0.04] transition-all cursor-pointer"
+                    title="Export filtered mockups to CSV"
+                  >
+                    CSV
+                  </button>
+                  <span className="w-px h-3 bg-border-medium" />
+                  <button
+                    onClick={exportMockupsJSON}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-bold text-text-muted hover:text-foreground-pure hover:bg-foreground/[0.04] transition-all cursor-pointer"
+                    title="Export filtered mockups to JSON"
+                  >
+                    JSON
+                  </button>
+                </div>
+
               </div>
 
             </div>

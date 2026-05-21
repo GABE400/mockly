@@ -144,6 +144,7 @@ export default async function DashboardPage() {
           plan={user.plan === "pro" ? "pro" : "free"} 
           initialUsage={currentMonthUsage} 
           initialMockups={serializedMockups} 
+          userRole={user.role as "admin" | "user"}
         />
 
       </main>

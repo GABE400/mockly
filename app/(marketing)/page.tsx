@@ -70,6 +70,16 @@ export default function MarketingPage() {
   const [device, setDevice] = useState<"iphone" | "pixel" | "macbook">("iphone");
   const [gradient, setGradient] = useState<"sunset" | "aurora" | "midnight" | "transparent">("sunset");
   const [isTilted, setIsTilted] = useState(true);
+  const [gridVisible, setGridVisible] = useState(false);
+  const [gridStyle, setGridStyle] = useState<"dots" | "lines" | "cross">("dots");
+  const [textOverlay, setTextOverlay] = useState("Design beautifully.");
+  const [textFontSize, setTextFontSize] = useState(28);
+  const [textWeight, setTextWeight] = useState<"normal" | "medium" | "bold" | "extra-bold">("bold");
+  const [textColor, setTextColor] = useState("");
+  const [textPosition, setTextPosition] = useState<"Top" | "Bottom">("Top");
+
+  const isBgLight = gradient === "transparent" ? theme !== "dark" : false;
+
 
   // FAQ Accordion states
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -356,6 +366,142 @@ export default function MarketingPage() {
                   </button>
                 </div>
               </div>
+
+              {/* 4. Canvas Alignment Grid */}
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold text-text-dim uppercase tracking-wider">4. Alignment Grid</h4>
+                  <button 
+                    onClick={() => setGridVisible(!gridVisible)}
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
+                      gridVisible 
+                        ? "bg-indigo-500/15 border-indigo-500/30 text-indigo-400" 
+                        : "border-border-medium text-text-dim hover:text-foreground-pure"
+                    }`}
+                  >
+                    {gridVisible ? "Enabled" : "Disabled"}
+                  </button>
+                </div>
+                {gridVisible && (
+                  <div className="grid grid-cols-3 gap-1.5 animate-fade-in">
+                    {(["dots", "lines", "cross"] as const).map((style) => (
+                      <button
+                        key={style}
+                        onClick={() => setGridStyle(style)}
+                        className={`py-1.5 rounded-xl text-[10px] font-bold capitalize transition-all cursor-pointer ${
+                          gridStyle === style
+                            ? "bg-foreground text-background font-black shadow-md"
+                            : "bg-bg-card border border-border-subtle text-text-semi-muted hover:text-foreground-pure"
+                        }`}
+                      >
+                        {style}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Typography Text Overlay */}
+              <div className="flex flex-col gap-2.5">
+                <h4 className="text-xs font-semibold text-text-dim uppercase tracking-wider">5. Typography Title</h4>
+                <input
+                  type="text"
+                  placeholder="Headline overlay..."
+                  value={textOverlay}
+                  onChange={(e) => setTextOverlay(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-border-subtle bg-bg-input text-xs text-foreground placeholder-text-dim focus:outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/10 transition-all"
+                />
+                
+                {textOverlay && (
+                  <div className="flex flex-col gap-3 animate-fade-in pl-1">
+                    {/* Position Toggle */}
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-semibold text-text-dim">Position</span>
+                      <div className="flex gap-1.5">
+                        {(["Top", "Bottom"] as const).map((pos) => (
+                          <button
+                            key={pos}
+                            onClick={() => setTextPosition(pos)}
+                            className={`px-2.5 py-0.5 rounded-full transition-all cursor-pointer font-bold ${
+                              textPosition === pos
+                                ? "bg-foreground text-background"
+                                : "text-text-muted hover:text-foreground-pure"
+                            }`}
+                          >
+                            {pos}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Font Size Slider */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="font-semibold text-text-dim">Font Size</span>
+                        <span className="font-bold text-foreground-pure">{textFontSize}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="16"
+                        max="48"
+                        value={textFontSize}
+                        onChange={(e) => setTextFontSize(Number(e.target.value))}
+                        className="w-full accent-indigo-500 h-1 bg-border-medium rounded-lg cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Font Weight */}
+                    <div className="flex flex-col gap-1 text-left">
+                      <span className="text-[10px] font-semibold text-text-dim">Font Weight</span>
+                      <div className="grid grid-cols-4 gap-1">
+                        {(["normal", "medium", "bold", "extra-bold"] as const).map((weight) => (
+                          <button
+                            key={weight}
+                            onClick={() => setTextWeight(weight)}
+                            className={`py-1 rounded text-[8px] font-bold uppercase transition-all cursor-pointer truncate ${
+                              textWeight === weight
+                                ? "bg-indigo-500/10 border border-indigo-500/30 text-indigo-400"
+                                : "bg-bg-card border border-border-subtle text-text-dim hover:text-foreground-pure"
+                            }`}
+                          >
+                            {weight === "normal" ? "Reg" : weight === "medium" ? "Med" : weight === "bold" ? "Bld" : "Ext"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Text Color */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold text-text-dim">Text Color</span>
+                      <div className="flex gap-2 items-center">
+                        <div className="relative w-7 h-7 rounded-lg overflow-hidden border border-border-subtle shrink-0">
+                          <input
+                            type="color"
+                            value={textColor || (isBgLight ? "#000000" : "#ffffff")}
+                            onChange={(e) => setTextColor(e.target.value)}
+                            className="absolute inset-0 w-full h-full scale-150 cursor-pointer border-none p-0 bg-transparent"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Auto Contrast"
+                          value={textColor}
+                          onChange={(e) => setTextColor(e.target.value)}
+                          className="flex-1 px-2.5 py-1 text-[10px] font-mono rounded-lg border border-border-subtle bg-bg-input text-foreground focus:outline-none focus:border-indigo-500/40"
+                        />
+                        {textColor && (
+                          <button
+                            onClick={() => setTextColor("")}
+                            className="text-[10px] font-semibold text-rose-400 hover:text-rose-300 px-1 py-0.5 cursor-pointer"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Right Live Viewport Canvas */}
@@ -389,6 +535,50 @@ export default function MarketingPage() {
                 {/* Visual Glassmorphic glows inside canvas */}
                 {gradient !== "transparent" && (
                   <div className="absolute top-[-20%] left-[-20%] w-[65%] h-[65%] bg-white/20 rounded-full blur-[80px] pointer-events-none" />
+                )}
+
+                {/* Canvas Grid Overlay */}
+                {gridVisible && (
+                  <div 
+                    className="absolute inset-0 pointer-events-none z-0 opacity-40 transition-all duration-300"
+                    style={{
+                      backgroundImage: 
+                        gridStyle === "dots"
+                          ? theme === "dark" 
+                            ? "radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)" 
+                            : "radial-gradient(rgba(0,0,0,0.15) 1px, transparent 1px)"
+                          : gridStyle === "lines"
+                          ? theme === "dark"
+                            ? "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)"
+                            : "linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)"
+                          : theme === "dark"
+                          ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 9v6M9 12h6' stroke='rgba(255,255,255,0.12)' stroke-width='1'/%3E%3C/svg%3E\")"
+                          : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 9v6M9 12h6' stroke='rgba(0,0,0,0.12)' stroke-width='1'/%3E%3C/svg%3E\")",
+                      backgroundSize: "24px 24px"
+                    }}
+                  />
+                )}
+
+                {/* Typography Title Overlay */}
+                {textOverlay && (
+                  <div 
+                    className="absolute left-0 right-0 flex justify-center pointer-events-none z-20 px-6"
+                    style={{
+                      top: textPosition === "Top" ? "10%" : "auto",
+                      bottom: textPosition === "Bottom" ? "10%" : "auto",
+                    }}
+                  >
+                    <span 
+                      className="tracking-tight drop-shadow-md select-none text-center leading-none max-w-md"
+                      style={{
+                        fontSize: `${textFontSize}px`,
+                        fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? 700 : 800,
+                        color: textColor || (isBgLight ? "#000000" : "#ffffff"),
+                      }}
+                    >
+                      {textOverlay}
+                    </span>
+                  </div>
                 )}
 
                 {/* Device Frame Wrapper with dynamic perspective transformations */}

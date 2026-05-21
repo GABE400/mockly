@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import Image from "next/image";
 import {
   ReactFlow,
   useNodesState,
-  Controls,
   Background,
   BackgroundVariant,
   Node,
@@ -40,10 +38,14 @@ export const BACKGROUND_PRESETS = [
 ];
 
 export const DEVICE_FRAMES = [
+  { id: "iPhone 17 Pro", name: "iPhone 17 Pro" },
+  { id: "iPhone 16 Pro", name: "iPhone 16 Pro" },
   { id: "iPhone 15 Pro", name: "iPhone 15 Pro" },
   { id: "iPhone 14", name: "iPhone 14" },
-  { id: "Pixel 8", name: "Pixel 8" },
-  { id: "Galaxy S24", name: "Galaxy S24" },
+  { id: "iPhone 13", name: "iPhone 13" },
+  { id: "Google Pixel 9 Pro", name: "Google Pixel 9 Pro" },
+  { id: "Samsung Galaxy S24", name: "Samsung Galaxy S24" },
+  { id: "Sony Xperia 1 VI", name: "Sony Xperia 1 VI" },
 ];
 
 export const FRAME_COLORS = [
@@ -76,6 +78,7 @@ interface MockupBuilderProps {
   plan: "free" | "pro";
   initialUsage: number;
   initialMockups: MockupRecord[];
+  userRole?: "admin" | "user";
 }
 
 // React Flow Custom Node Renderer Component
@@ -92,30 +95,48 @@ function CustomDeviceNode({ id, data, selected }: any) {
   let transform3DStyle = "";
   let shadowStyle = "";
 
+  const intensity = data.shadowIntensity || "Soft";
+
   switch (data.tilt) {
     case "Left Tilt":
       transform3DStyle = "perspective(1200px) rotateY(-20deg) rotateX(8deg) rotateZ(3deg) scale(0.85)";
-      shadowStyle = "drop-shadow(-24px 30px 40px rgba(0, 0, 0, 0.45))";
+      if (intensity === "Soft") {
+        shadowStyle = "drop-shadow(-16px 20px 25px rgba(0, 0, 0, 0.35))";
+      } else if (intensity === "Dramatic") {
+        shadowStyle = "drop-shadow(-28px 36px 48px rgba(0, 0, 0, 0.6)) drop-shadow(-4px 8px 16px rgba(0, 0, 0, 0.3))";
+      }
       break;
     case "Right Tilt":
       transform3DStyle = "perspective(1200px) rotateY(20deg) rotateX(8deg) rotateZ(-3deg) scale(0.85)";
-      shadowStyle = "drop-shadow(24px 30px 40px rgba(0, 0, 0, 0.45))";
+      if (intensity === "Soft") {
+        shadowStyle = "drop-shadow(16px 20px 25px rgba(0, 0, 0, 0.35))";
+      } else if (intensity === "Dramatic") {
+        shadowStyle = "drop-shadow(28px 36px 48px rgba(0, 0, 0, 0.6)) drop-shadow(4px 8px 16px rgba(0, 0, 0, 0.3))";
+      }
       break;
     case "Floating":
       transform3DStyle = "perspective(1200px) rotateX(12deg) translateY(-12px) scale(0.88)";
-      shadowStyle = "drop-shadow(0 35px 50px rgba(0, 0, 0, 0.5))";
+      if (intensity === "Soft") {
+        shadowStyle = "drop-shadow(0 20px 30px rgba(0, 0, 0, 0.35))";
+      } else if (intensity === "Dramatic") {
+        shadowStyle = "drop-shadow(0 40px 60px rgba(0, 0, 0, 0.65)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4))";
+      }
       break;
     case "Flat":
     default:
       transform3DStyle = "perspective(1200px) scale(0.92)";
-      shadowStyle = "drop-shadow(0 20px 30px rgba(0, 0, 0, 0.35))";
+      if (intensity === "Soft") {
+        shadowStyle = "drop-shadow(0 12px 20px rgba(0, 0, 0, 0.25))";
+      } else if (intensity === "Dramatic") {
+        shadowStyle = "drop-shadow(0 30px 45px rgba(0, 0, 0, 0.55)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3))";
+      }
       break;
   }
 
   return (
     <div 
       className={`relative w-[172px] h-[364px] flex flex-col items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
-        selected ? "ring-2 ring-indigo-500 ring-offset-4 ring-offset-black rounded-[38px] scale-105" : ""
+        selected ? "ring-2 ring-indigo-500 rounded-[38px] scale-105 shadow-[0_0_20px_rgba(99,102,241,0.35)]" : ""
       }`}
       style={{ transform: transform3DStyle }}
     >
@@ -128,26 +149,30 @@ function CustomDeviceNode({ id, data, selected }: any) {
         <div className="absolute -right-[12px] top-[84px] w-[2px] h-[36px] rounded-r-md z-30" style={{ backgroundColor: buttonsColor }} />
 
         {/* Notch dynamic layouts */}
-        {data.deviceFrame === "iPhone 15 Pro" && (
+        {(data.deviceFrame === "iPhone 17 Pro" || data.deviceFrame === "iPhone 16 Pro" || data.deviceFrame === "iPhone 15 Pro") && (
           <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[42%] h-[16px] bg-[#000] rounded-full z-30 flex items-center justify-center">
             <span className="w-1.5 h-1.5 rounded-full bg-[#111] absolute right-[25%] shadow-[inset_0_1px_2px_rgba(255,255,255,0.15)]" />
           </div>
         )}
 
-        {data.deviceFrame === "iPhone 14" && (
+        {(data.deviceFrame === "iPhone 14" || data.deviceFrame === "iPhone 13") && (
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[52%] h-[18px] bg-[#000] rounded-b-[10px] z-30 flex items-center justify-center">
             <span className="w-[45%] h-[2px] bg-[#222] rounded-full absolute top-[3px]" />
           </div>
         )}
 
-        {data.deviceFrame === "Pixel 8" && (
+        {data.deviceFrame === "Google Pixel 9 Pro" && (
           <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-[9px] h-[9px] bg-[#000] rounded-full z-30 border border-slate-900 flex items-center justify-center">
             <span className="w-1 h-1 rounded-full bg-[#111]" />
           </div>
         )}
 
-        {data.deviceFrame === "Galaxy S24" && (
+        {data.deviceFrame === "Samsung Galaxy S24" && (
           <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[7px] h-[7px] bg-[#000] rounded-full z-30 border border-slate-950 flex items-center justify-center" />
+        )}
+
+        {data.deviceFrame === "Sony Xperia 1 VI" && (
+          <div className="absolute top-[6px] left-1/2 -translate-x-1/2 w-[8px] h-[8px] bg-[#000] rounded-full z-30 border border-slate-950 flex items-center justify-center" />
         )}
 
         {/* 1px inset ring */}
@@ -195,7 +220,7 @@ const nodeTypes = {
   deviceMockup: CustomDeviceNode,
 };
 
-export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuilderProps) {
+export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "user" }: MockupBuilderProps) {
   // SSR Hydration safeguard
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -212,9 +237,104 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
   // Text Overlay State
   const [textOverlay, setTextOverlay] = useState("");
   const [textPosition, setTextPosition] = useState<"Top" | "Bottom">("Top");
+  const [textFontSize, setTextFontSize] = useState<number>(32);
+  const [textColor, setTextColor] = useState<string>("");
+  const [textWeight, setTextWeight] = useState<"normal" | "medium" | "bold" | "extrabold">("bold");
+
+  // Alignment Grid State
+  const [gridVisible, setGridVisible] = useState<boolean>(true);
+  const [gridVariant, setGridVariant] = useState<"dots" | "lines" | "cross">("dots");
 
   // React Flow Nodes
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+
+  // Load saved workspace state from localStorage on mount
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      const saved = localStorage.getItem("mockly_workspace_state");
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.title !== undefined) setTitle(state.title);
+        if (state.selectedBg !== undefined) setSelectedBg(state.selectedBg);
+        if (state.customBgColor !== undefined) setCustomBgColor(state.customBgColor);
+        if (state.shadowIntensity !== undefined) setShadowIntensity(state.shadowIntensity);
+        if (state.paddingLevel !== undefined) setPaddingLevel(state.paddingLevel);
+        if (state.textOverlay !== undefined) setTextOverlay(state.textOverlay);
+        if (state.textPosition !== undefined) setTextPosition(state.textPosition);
+        if (state.textFontSize !== undefined) setTextFontSize(state.textFontSize);
+        if (state.textColor !== undefined) setTextColor(state.textColor);
+        if (state.textWeight !== undefined) setTextWeight(state.textWeight);
+        if (state.gridVisible !== undefined) setGridVisible(state.gridVisible);
+        if (state.gridVariant !== undefined) setGridVariant(state.gridVariant);
+        if (state.nodes !== undefined && Array.isArray(state.nodes)) {
+          setNodes(state.nodes);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load saved workspace state:", e);
+    }
+  }, [mounted, setNodes]);
+
+  // Save workspace state to localStorage on changes
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      const state = {
+        title,
+        selectedBg,
+        customBgColor,
+        shadowIntensity,
+        paddingLevel,
+        textOverlay,
+        textPosition,
+        textFontSize,
+        textColor,
+        textWeight,
+        gridVisible,
+        gridVariant,
+        nodes,
+      };
+      localStorage.setItem("mockly_workspace_state", JSON.stringify(state));
+    } catch (e) {
+      console.error("Failed to save workspace state:", e);
+    }
+  }, [
+    mounted,
+    title,
+    selectedBg,
+    customBgColor,
+    shadowIntensity,
+    paddingLevel,
+    textOverlay,
+    textPosition,
+    textFontSize,
+    textColor,
+    textWeight,
+    gridVisible,
+    gridVariant,
+    nodes,
+  ]);
+
+  const isLightColor = (hex: string) => {
+    if (!hex) return false;
+    const cleaned = hex.replace("#", "");
+    if (cleaned.length === 3) {
+      const r = parseInt(cleaned[0] + cleaned[0], 16);
+      const g = parseInt(cleaned[1] + cleaned[1], 16);
+      const b = parseInt(cleaned[2] + cleaned[2], 16);
+      return (r * 0.299 + g * 0.587 + b * 0.114) > 186;
+    }
+    if (cleaned.length === 6) {
+      const r = parseInt(cleaned.substring(0, 2), 16);
+      const g = parseInt(cleaned.substring(2, 4), 16);
+      const b = parseInt(cleaned.substring(4, 6), 16);
+      return (r * 0.299 + g * 0.587 + b * 0.114) > 186;
+    }
+    return false;
+  };
+
+  const isBgLight = selectedBg === "white" || selectedBg === "candy" || isLightColor(customBgColor);
 
   // Controls open states for Collapsible sidebar groups
   const [openSections, setOpenSections] = useState({
@@ -231,10 +351,26 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
 
   // Toast Notifications
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const showToast = (message: string, type: "success" | "error") => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
     setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 4000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Image Upload State
   const [isUploading, setIsUploading] = useState(false);
@@ -248,7 +384,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
   const [mockupsList, setMockupsList] = useState<MockupRecord[]>(initialMockups);
   const [showLimitModal, setShowLimitModal] = useState(false);
 
-  const maxScreens = plan === "free" ? 2 : 5;
+  const maxScreens = plan === "free" ? 3 : 7;
 
   const handleUpgrade = async () => {
     setIsUpgrading(true);
@@ -271,12 +407,22 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
   const selectedNode = useMemo(() => nodes.find((n) => n.selected), [nodes]);
 
   // Dynamically compute node depths (active node on top)
+  // Stable delete callback to prevent stale closures
+  const handleDeleteNode = React.useCallback((id: string) => {
+    deleteNode(id);
+  }, []);
+
   const nodesWithZIndex = useMemo(() => {
     return nodes.map((node) => ({
       ...node,
       zIndex: node.selected ? 10 : 1,
+      data: {
+        ...node.data,
+        shadowIntensity,
+        onDelete: handleDeleteNode,
+      }
     }));
-  }, [nodes]);
+  }, [nodes, shadowIntensity, handleDeleteNode]);
 
   const activeBg = BACKGROUND_PRESETS.find((bg) => bg.id === selectedBg) || BACKGROUND_PRESETS[0];
 
@@ -344,11 +490,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
     setIsUploading(true);
 
     try {
-      const spawnedNodes: Node[] = [];
-
-      for (let i = 0; i < filesToUpload.length; i++) {
-        const file = filesToUpload[i];
-        
+      const uploadPromises = filesToUpload.map(async (file, i) => {
         // Base64 read inside a promise
         const base64Data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -386,14 +528,13 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
             deviceFrame: DEVICE_FRAMES[0].id,
             frameColor: FRAME_COLORS[0].id,
             tilt: ANGLES[0].id,
-            onDelete: (id: string) => {
-              setNodes((nds) => nds.filter((n) => n.id !== id));
-            },
           },
           selected: i === filesToUpload.length - 1, // Select the last spawned node
         };
-        spawnedNodes.push(spawnedNode);
-      }
+        return spawnedNode;
+      });
+
+      const spawnedNodes = await Promise.all(uploadPromises);
 
       // Add to state and set selected states correctly
       setNodes((nds) => {
@@ -407,6 +548,9 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
       showToast(err.message || "An unexpected error occurred during upload.", "error");
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -457,7 +601,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
       return;
     }
 
-    if (plan === "free" && usageCount >= 5) {
+    if (plan === "free" && userRole !== "admin" && usageCount >= 5) {
       setShowLimitModal(true);
       return;
     }
@@ -488,6 +632,9 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
           paddingLevel,
           textOverlay: textOverlay.trim() || null,
           textPosition,
+          textFontSize,
+          textColor: textColor || null,
+          textWeight,
           nodes: nodesPayload,
           // Legacy backward compatibility placeholders
           screenshotUrl: nodesPayload[0]?.screenshotUrl || null,
@@ -552,7 +699,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
 
             <h3 className="text-xl font-extrabold text-foreground-pure mb-2">Upgrade to Pro</h3>
             <p className="text-sm text-text-muted mb-6 leading-relaxed">
-              Export unlimited high-res multi-device renders, position up to **5 devices on canvas**, and style with premium custom presets!
+              Export unlimited high-res multi-device renders, position up to **7 devices on canvas**, and style with premium custom presets!
             </p>
 
             <div className="flex flex-col gap-3">
@@ -590,7 +737,13 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
           {/* Filename Card */}
           <div className="border border-border-medium bg-bg-card/50 backdrop-blur-sm rounded-3xl p-5 relative overflow-hidden flex flex-col gap-3">
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
-            <label className="text-xs font-bold text-foreground-pure">Mockup Project Filename</label>
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold text-foreground-pure">Mockup Project Filename</label>
+              <div className="flex items-center gap-1.5 text-[9px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full select-none">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Auto-saved</span>
+              </div>
+            </div>
             <input
               type="text"
               value={title}
@@ -927,6 +1080,41 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
                     </div>
                   </div>
 
+                  {/* Canvas alignment grids */}
+                  <div className="flex flex-col gap-2 text-left border-t border-border-subtle pt-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold text-text-muted">Canvas Alignment Grid</label>
+                      <button
+                        onClick={() => setGridVisible(!gridVisible)}
+                        className={`text-[9px] font-bold px-2 py-0.5 rounded-md border select-none cursor-pointer transition-all ${
+                          gridVisible
+                            ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400"
+                            : "bg-foreground/[0.02] border-border-medium text-text-muted"
+                        }`}
+                      >
+                        {gridVisible ? "Enabled" : "Disabled"}
+                      </button>
+                    </div>
+
+                    {gridVisible && (
+                      <div className="grid grid-cols-3 gap-1.5 mt-1">
+                        {(["dots", "lines", "cross"] as const).map((variant) => (
+                          <button
+                            key={variant}
+                            onClick={() => setGridVariant(variant)}
+                            className={`py-1.5 rounded-lg border text-[9px] font-bold capitalize active:scale-[0.98] transition-all select-none cursor-pointer ${
+                              gridVariant === variant
+                                ? "border-indigo-500 bg-indigo-500/5 text-foreground-pure"
+                                : "border-border-medium bg-foreground/[0.01] hover:bg-foreground/[0.03] text-text-semi-muted"
+                            }`}
+                          >
+                            {variant}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>
@@ -976,6 +1164,64 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
                     </div>
                   </div>
 
+                  {/* Font Size & Custom Color */}
+                  <div className="grid grid-cols-2 gap-3.5 border-t border-border-subtle pt-3 text-left">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-text-muted">Size ({textFontSize}px)</label>
+                      <input
+                        type="range"
+                        min="16"
+                        max="64"
+                        step="2"
+                        value={textFontSize}
+                        onChange={(e) => setTextFontSize(Number(e.target.value))}
+                        className="w-full h-1.5 bg-foreground/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-text-muted">Weight</label>
+                      <select
+                        value={textWeight}
+                        onChange={(e) => setTextWeight(e.target.value as any)}
+                        className="w-full bg-foreground/[0.02] border border-border-medium text-foreground-pure rounded-xl px-2 py-1.5 text-[10px] focus:outline-none focus:border-indigo-500/50 cursor-pointer"
+                      >
+                        <option value="normal" className="bg-background text-foreground">Regular</option>
+                        <option value="medium" className="bg-background text-foreground">Medium</option>
+                        <option value="bold" className="bg-background text-foreground">Bold</option>
+                        <option value="extrabold" className="bg-background text-foreground">Extra Bold</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Custom Text Color */}
+                  <div className="flex flex-col gap-1.5 text-left border-t border-border-subtle pt-3">
+                    <label className="text-[10px] font-bold text-text-muted">Custom Typography Color</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={textColor || (isBgLight ? "#000000" : "#ffffff")}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        className="w-9 h-9 rounded-xl border border-border-strong flex-shrink-0 bg-transparent cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={textColor}
+                        onChange={(e) => setTextColor(e.target.value)}
+                        placeholder="Auto (contrast matched)"
+                        className="flex-1 bg-foreground/[0.02] border border-border-medium text-foreground-pure rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500/50"
+                      />
+                      {textColor && (
+                        <button
+                          onClick={() => setTextColor("")}
+                          className="px-2.5 py-2 border border-border-medium hover:border-rose-500/30 text-text-muted hover:text-rose-400 rounded-xl text-[10px] transition-colors cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>
@@ -985,11 +1231,15 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-text-muted">Quota Usage:</span>
-                  <span className={`font-black ${plan === "free" && usageCount >= 5 ? "text-rose-400" : "text-indigo-400"}`}>
-                    {usageCount} / {plan === "free" ? "5" : "∞"} free exports used
+                  <span className={`font-black ${plan === "free" && userRole !== "admin" && usageCount >= 5 ? "text-rose-400" : "text-indigo-400"}`}>
+                    {userRole === "admin" ? (
+                      "∞ (Admin Free Access)"
+                    ) : (
+                      `${usageCount} / ${plan === "free" ? "5" : "∞"} free exports used`
+                    )}
                   </span>
                 </div>
-                {plan === "free" && (
+                {plan === "free" && userRole !== "admin" && (
                   <button
                     type="button"
                     onClick={() => setShowLimitModal(true)}
@@ -1002,12 +1252,12 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
 
               <button
                 type="button"
-                disabled={nodes.length === 0 || isExporting || (plan === "free" && usageCount >= 5)}
+                disabled={nodes.length === 0 || isExporting || (plan === "free" && userRole !== "admin" && usageCount >= 5)}
                 onClick={handleExport}
                 className={`w-full font-extrabold text-sm py-3.5 rounded-full shadow-lg transition-all flex items-center justify-center gap-2 select-none cursor-pointer ${
                   nodes.length === 0
                     ? "bg-foreground/5 text-text-muted border border-border-medium cursor-not-allowed"
-                    : plan === "free" && usageCount >= 5
+                    : plan === "free" && userRole !== "admin" && usageCount >= 5
                       ? "bg-rose-500/20 text-rose-300 border border-rose-500/20 cursor-not-allowed"
                       : isExporting
                         ? "bg-indigo-500/80 text-white cursor-wait"
@@ -1019,7 +1269,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Generating 1200x675 PNG...
                   </>
-                ) : plan === "free" && usageCount >= 5 ? (
+                ) : plan === "free" && userRole !== "admin" && usageCount >= 5 ? (
                   "Limit Reached — Upgrade to Export"
                 ) : nodes.length === 0 ? (
                   "Upload Screenshots to Export"
@@ -1045,7 +1295,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
             <div className="flex items-center justify-between text-xs">
               <span className="font-extrabold text-foreground-pure flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live React Flow Canvas
+                Live Canvas
               </span>
               <span className="text-[10px] text-text-muted bg-foreground/[0.04] px-2.5 py-0.5 rounded-full border border-border-subtle font-mono">
                 Ratio: 1200x675
@@ -1092,13 +1342,21 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
                       className="w-full h-full"
                     >
                       {/* Grid background layer */}
-                      <Background 
-                        variant={BackgroundVariant.Dots} 
-                        size={1.5} 
-                        gap={24}
-                        color="var(--grid-line)"
-                        style={{ opacity: 0.12 }}
-                      />
+                      {gridVisible && (
+                        <Background 
+                          variant={
+                            gridVariant === "dots" 
+                              ? BackgroundVariant.Dots 
+                              : gridVariant === "lines" 
+                              ? BackgroundVariant.Lines 
+                              : BackgroundVariant.Cross
+                          } 
+                          size={1.5} 
+                          gap={24}
+                          color="var(--grid-line)"
+                          style={{ opacity: 0.12 }}
+                        />
+                      )}
 
                       {/* Text Overlay inside sandbox */}
                       {textOverlay && (
@@ -1110,11 +1368,12 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
                           }}
                         >
                           <span 
-                            className={`text-3xl font-extrabold tracking-tight drop-shadow-md select-none text-center leading-none ${
-                              selectedBg === "white" || customBgColor?.toLowerCase() === "#ffffff" 
-                                ? "text-black" 
-                                : "text-white"
-                            }`}
+                            className="tracking-tight drop-shadow-md select-none text-center leading-none"
+                            style={{
+                              fontSize: `${textFontSize}px`,
+                              fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? 700 : 800,
+                              color: textColor || (isBgLight ? "#000000" : "#ffffff"),
+                            }}
                           >
                             {textOverlay}
                           </span>
@@ -1131,11 +1390,30 @@ export function MockupBuilder({ plan, initialUsage, initialMockups }: MockupBuil
                       />
                     </ReactFlow>
                   </ReactFlowProvider>
+
+                  {/* Live Canvas Watermark for Free Plan users (exempting Admins) */}
+                  {plan === "free" && userRole !== "admin" && (
+                    <div 
+                      className="absolute bottom-6 right-6 z-[100] pointer-events-none select-none flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 shadow-2xl backdrop-blur-md animate-fade-in"
+                      style={{
+                        backgroundColor: "rgba(15, 23, 42, 0.45)",
+                      }}
+                    >
+                      <img 
+                        src="/logo.png" 
+                        alt="Muckly Logo" 
+                        className="w-5 h-5 rounded-md border border-white/10 shadow-md object-cover mr-2"
+                      />
+                      <span className="text-[10px] font-black tracking-[0.12em] text-white uppercase font-sans">
+                        Muckly
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
             
-            <div className="flex items-center gap-1.5 justify-center py-0.5 border border-border-subtle bg-foreground/[0.01] rounded-2xl px-4 py-2">
+            <div className="flex items-center gap-1.5 justify-center border border-border-subtle bg-foreground/[0.01] rounded-2xl px-4 py-2">
               <span className="text-[10px] text-text-dim leading-none text-center">
                 👉 Click a screen to select & configure bezel finish or presentation tilt details. Drag mockups to arrange them freely on the canvas!
               </span>
