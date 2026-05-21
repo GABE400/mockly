@@ -11,7 +11,7 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Muckly | Your App Mockups Made Easy",
   description: "Muckly is a premium SaaS that turns your raw mobile app emulator screenshots into clean, professional, and customizable device mockups instantly. Your app mockups made easy.",
-  metadataBase: new URL("https://www.usemuckly.com"),
+  metadataBase: new URL("https://usemuckly.com"),
   icons: {
     icon: "/logo.png",
     shortcut: "/logo.png",
