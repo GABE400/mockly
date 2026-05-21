@@ -34,17 +34,15 @@ export default function SupportPage() {
         }`}
       >
         <div className="mx-auto max-w-7xl px-6 md:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="relative w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-all duration-200">
-                <Image 
-                  src="/logo.png" 
-                  alt="Muckly Logo" 
-                  width={20} 
-                  height={20} 
-                  className="w-5 h-5 object-contain invert brightness-0"
-                />
-              </div>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 group">
+              <Image 
+                src="/logo.png" 
+                alt="Muckly Logo" 
+                width={isScrolled ? 28 : 32} 
+                height={isScrolled ? 28 : 32} 
+                className="rounded-lg shadow-lg shadow-indigo-500/10 object-cover border border-border-subtle transition-all duration-300"
+              />
               <span className="text-lg md:text-xl font-bold tracking-tight text-foreground-pure">
                 Muckly
               </span>
@@ -175,20 +173,16 @@ export default function SupportPage() {
       <footer className="mx-auto max-w-7xl px-6 md:px-8 border-t border-border-subtle/50 py-12 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
           
-          <div className="max-w-sm">
-            <Link href="/" className="flex items-center gap-2.5 mb-4 group">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-md">
-                <Image 
-                  src="/logo.png" 
-                  alt="Muckly Logo" 
-                  width={16} 
-                  height={16} 
-                  className="w-4 h-4 object-contain invert brightness-0"
-                />
-              </div>
-              <span className="font-bold tracking-tight text-foreground-pure text-base">
-                Muckly
-              </span>
+          <div className="max-w-sm flex flex-col gap-4 text-left">
+            <Link href="/" className="flex items-center gap-3 group">
+              <Image 
+                src="/logo.png" 
+                alt="Muckly Logo" 
+                width={24} 
+                height={24} 
+                className="rounded-md object-cover border border-border-subtle"
+              />
+              <span className="text-lg font-bold tracking-tight text-foreground-pure">Muckly</span>
             </Link>
             <p className="text-xs text-text-dim leading-relaxed">
               Instantly transform raw screenshots into high-end, customizable device mockups. Made for builders, designers, and creators worldwide.
