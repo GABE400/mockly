@@ -1328,16 +1328,30 @@ export default function MarketingPage() {
 
         <div className="mx-auto max-w-7xl px-6 md:px-8 mt-12 pt-6 border-t border-border-subtle flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-text-dim">
           <div>&copy; {new Date().getFullYear()} Muckly Inc. All rights reserved.</div>
-          <div className="flex items-center gap-1.5">
-            <span>Built by</span>
-            <a 
-              href="https://github.com/barakis" 
-              className="text-text-muted hover:text-indigo-400 font-medium transition-colors duration-150 border-b border-border-medium hover:border-indigo-400 pb-0.5"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Barakis
-            </a>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span>Built by</span>
+              <a 
+                href="https://github.com/barakis" 
+                className="text-text-muted hover:text-indigo-400 font-medium transition-colors duration-150 border-b border-border-medium hover:border-indigo-400 pb-0.5"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Barakis
+              </a>
+            </div>
+            <span className="text-text-dim/40">|</span>
+            <div className="flex items-center gap-1.5">
+              <span>Powered by</span>
+              <a 
+                href="https://www.techadotech.com/" 
+                className="text-text-muted hover:text-indigo-400 font-medium transition-colors duration-150 border-b border-border-medium hover:border-indigo-400 pb-0.5"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Techado Tech
+              </a>
+            </div>
           </div>
         </div>
       </footer>

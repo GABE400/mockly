@@ -463,8 +463,20 @@ export function ProfileSettingsModal({ user: initialUser, isOpen, onClose }: Pro
 
         {/* Footer */}
         <div className="px-6 py-3.5 border-t border-border-subtle text-center">
-          <p className="text-[11px] text-text-dim">
-            Muckly &copy; {new Date().getFullYear()} &middot; All connections are encrypted.
+          <p className="text-[11px] text-text-dim flex items-center gap-1.5 justify-center flex-wrap">
+            <span>Muckly &copy; {new Date().getFullYear()}</span>
+            <span className="opacity-40">&middot;</span>
+            <span>All connections are encrypted.</span>
+            <span className="opacity-40">&middot;</span>
+            <span>Powered by</span>
+            <a 
+              href="https://www.techadotech.com/" 
+              className="text-text-muted hover:text-indigo-400 font-medium hover:underline transition-colors duration-150"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Techado Tech
+            </a>
           </p>
         </div>
       </div>

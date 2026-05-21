@@ -1124,10 +1124,23 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
 
       </main>
 
-      {/* Trust & Policy Info */}
-      <footer className="text-center text-[10px] text-text-muted leading-relaxed px-4 py-12 select-none border-t border-border-subtle mt-16">
-        Muckly Admin Panel Console &copy; {new Date().getFullYear()} Muckly Inc. All rights reserved. 
-        Highly confidential. Unauthorized reproduction, scanning, or interception is strictly prohibited.
+      <footer className="text-center text-[10px] text-text-muted leading-relaxed px-4 py-12 select-none border-t border-border-subtle mt-16 flex flex-col items-center gap-1.5">
+        <div>
+          Muckly Admin Panel Console &copy; {new Date().getFullYear()} Muckly Inc. All rights reserved.
+        </div>
+        <div className="flex items-center gap-1.5 text-text-dim justify-center">
+          <span>Powered by</span>
+          <a 
+            href="https://www.techadotech.com/" 
+            className="text-text-muted hover:text-indigo-400 hover:underline transition-colors duration-150 font-medium"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Techado Tech
+          </a>
+          <span className="opacity-40">&middot;</span>
+          <span>Highly confidential. Unauthorized reproduction, scanning, or interception is strictly prohibited.</span>
+        </div>
       </footer>
 
       {/* IMAGE PREVIEW LIGHTBOX MODAL */}
