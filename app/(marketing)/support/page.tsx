@@ -4,19 +4,11 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Navbar } from "@/components/navbar";
 
 export default function SupportPage() {
   const { data: session } = useSession();
-  const [isScrolled, setIsScrolled] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   return (
     <div className="min-h-screen bg-bg-app text-foreground font-dm-sans selection:bg-indigo-500/30 overflow-x-hidden">
@@ -25,77 +17,7 @@ export default function SupportPage() {
       <div className="absolute top-[-10%] left-[-20%] w-[80%] h-[60%] rounded-full bg-indigo-500/10 blur-[150px] -z-10 pointer-events-none" />
       <div className="absolute bottom-[20%] right-[-10%] w-[60%] h-[50%] rounded-full bg-purple-500/5 blur-[120px] -z-10 pointer-events-none" />
 
-      {/* Header Navigation */}
-      <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled 
-            ? "bg-bg-app/80 backdrop-blur-lg border-b border-border-subtle/60 py-4" 
-            : "bg-transparent py-6"
-        }`}
-      >
-        <div className="mx-auto max-w-7xl px-6 md:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-3 group">
-              <Image 
-                src="/logo.png" 
-                alt="Muckly Logo" 
-                width={isScrolled ? 28 : 32} 
-                height={isScrolled ? 28 : 32} 
-                className="rounded-lg shadow-lg shadow-indigo-500/10 object-cover border border-border-subtle transition-all duration-300"
-              />
-              <span className="text-lg md:text-xl font-bold tracking-tight text-foreground-pure">
-                Muckly
-              </span>
-            </Link>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-text-muted">
-            <Link href="/#features" className="hover:text-foreground-pure transition-colors duration-200">Features</Link>
-            <Link href="/#playground" className="hover:text-foreground-pure transition-colors duration-200">Playground</Link>
-            <Link href="/pricing" className="hover:text-foreground-pure transition-colors duration-200">Pricing</Link>
-            <Link href="/support" className="text-foreground-pure font-bold transition-colors duration-200">Support</Link>
-            <Link href="/#faq" className="hover:text-foreground-pure transition-colors duration-200">FAQ</Link>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            
-            {session ? (
-              <div className="flex items-center gap-3">
-                <Link 
-                  href="/dashboard" 
-                  className="text-xs md:text-sm font-semibold text-text-semi-muted hover:text-foreground-pure transition-colors duration-200 px-3 py-1.5"
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  href="/settings/billing" 
-                  className="hidden sm:inline-flex items-center justify-center text-xs font-semibold bg-foreground text-background hover:opacity-90 active:scale-[0.98] transition-all duration-200 rounded-full px-4 py-2"
-                >
-                  Manage Account
-                </Link>
-              </div>
-            ) : (
-              <>
-                <Link 
-                  id="nav-login-btn"
-                  href="/sign-in" 
-                  className="text-xs md:text-sm font-medium text-text-semi-muted hover:text-foreground-pure transition-colors duration-200 px-3 py-1.5"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  id="nav-signup-btn"
-                  href="/sign-up" 
-                  className="hidden sm:inline-flex items-center justify-center text-xs font-semibold bg-foreground text-background hover:opacity-90 active:scale-[0.98] transition-all duration-200 rounded-full px-4 py-2"
-                >
-                  Get Started
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Container */}
       <main className="relative z-10 mx-auto max-w-7xl px-6 md:px-8 py-32 flex flex-col items-center justify-center min-h-[80vh]">
@@ -206,7 +128,7 @@ export default function SupportPage() {
             <div className="flex items-center gap-1.5">
               <span>Built by</span>
               <a 
-                href="https://github.com/barakis" 
+                href="https://barakis.com/" 
                 className="text-text-muted hover:text-indigo-400 font-medium transition-colors duration-150 border-b border-border-medium hover:border-indigo-400 pb-0.5"
                 target="_blank"
                 rel="noopener noreferrer"

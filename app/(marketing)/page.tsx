@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { useTheme } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Navbar } from "@/components/navbar";
 
 const faqs = [
   {
@@ -63,9 +63,6 @@ export default function MarketingPage() {
     }
   };
 
-  // Navigation morphing state
-  const [isScrolled, setIsScrolled] = useState(false);
-
   // Playground customize states
   const [device, setDevice] = useState<"iphone" | "pixel" | "macbook">("iphone");
   const [gradient, setGradient] = useState<"sunset" | "aurora" | "midnight" | "transparent">("sunset");
@@ -83,14 +80,6 @@ export default function MarketingPage() {
 
   // FAQ Accordion states
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -130,77 +119,7 @@ export default function MarketingPage() {
         }}
       />
 
-      {/* Morphing Navigation Header */}
-      <header 
-        className={`z-50 transition-all duration-300 ease-in-out ${
-          isScrolled 
-            ? "fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-4xl border border-border-medium bg-[var(--header-bg-scrolled)] backdrop-blur-md rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.15)] py-2.5 px-6" 
-            : "sticky top-0 w-full border-b border-border-subtle bg-[var(--header-bg)] backdrop-blur-md py-4 px-6 md:px-8"
-        }`}
-      >
-        <div className="mx-auto max-w-7xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image 
-              src="/logo.png" 
-              alt="Muckly Logo" 
-              width={isScrolled ? 28 : 32} 
-              height={isScrolled ? 28 : 32} 
-              className="rounded-lg shadow-lg shadow-indigo-500/10 object-cover border border-border-subtle transition-all duration-300"
-            />
-            <span className="text-lg md:text-xl font-bold tracking-tight text-foreground-pure">
-              Muckly
-            </span>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-text-muted">
-            <a href="#features" className="hover:text-foreground-pure transition-colors duration-200">Features</a>
-            <a href="#playground" className="hover:text-foreground-pure transition-colors duration-200">Playground</a>
-            <a href="#pricing" className="hover:text-foreground-pure transition-colors duration-200">Pricing</a>
-            <a href="/support" className="hover:text-foreground-pure transition-colors duration-200">Support</a>
-            <a href="#faq" className="hover:text-foreground-pure transition-colors duration-200">FAQ</a>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            
-            {/* Elegant Custom Theme Toggle Capsule */}
-            <ThemeToggle />
-
-            {session ? (
-              <>
-                <Link 
-                  href="/dashboard" 
-                  className="text-xs md:text-sm font-semibold text-text-semi-muted hover:text-foreground-pure transition-colors duration-200 px-3 py-1.5"
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  href="/settings/billing" 
-                  className="hidden sm:inline-flex items-center justify-center text-xs font-semibold bg-foreground text-background hover:opacity-90 active:scale-[0.98] transition-all duration-200 rounded-full px-4 py-2"
-                >
-                  Manage Account
-                </Link>
-              </>
-            ) : (
-              <>
-                <a 
-                  id="nav-login-btn"
-                  href="/sign-in" 
-                  className="text-xs md:text-sm font-medium text-text-semi-muted hover:text-foreground-pure transition-colors duration-200 px-3 py-1.5"
-                >
-                  Sign In
-                </a>
-                <a 
-                  id="nav-signup-btn"
-                  href="/sign-up" 
-                  className="hidden sm:inline-flex items-center justify-center text-xs font-semibold bg-foreground text-background hover:opacity-90 active:scale-[0.98] transition-all duration-200 rounded-full px-4 py-2"
-                >
-                  Get Started
-                </a>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Main Container */}
       <main className="relative z-10 mx-auto max-w-7xl px-6 md:px-8 pt-10">
@@ -1334,7 +1253,7 @@ export default function MarketingPage() {
             <div className="flex items-center gap-1.5">
               <span>Built by</span>
               <a 
-                href="https://github.com/barakis" 
+                href="https://barakis.com/" 
                 className="text-text-muted hover:text-indigo-400 font-medium transition-colors duration-150 border-b border-border-medium hover:border-indigo-400 pb-0.5"
                 target="_blank"
                 rel="noopener noreferrer"
