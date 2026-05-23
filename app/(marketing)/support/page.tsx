@@ -54,10 +54,10 @@ export default function SupportPage() {
             <p className="text-xs font-medium text-text-dim mb-2 uppercase tracking-wide">Direct Support Email</p>
             
             <a 
-              href="mailto:contact@techadotech.com" 
+              href="mailto:support@usemuckly.com" 
               className="text-lg md:text-xl font-bold text-foreground-pure hover:text-indigo-400 transition-colors flex items-center gap-2 group/link border-b border-dashed border-border-strong hover:border-indigo-400 pb-1 mb-8 duration-200"
             >
-              <span>contact@techadotech.com</span>
+              <span>support@usemuckly.com</span>
               <svg 
                 className="w-4 h-4 text-text-dim group-hover/link:text-indigo-400 transition-transform group-hover/link:translate-x-0.5" 
                 fill="none" 
@@ -70,7 +70,7 @@ export default function SupportPage() {
             </a>
 
             <a 
-              href="mailto:contact@techadotech.com"
+              href="mailto:support@usemuckly.com"
               className="w-full inline-flex items-center justify-center gap-2 text-sm font-semibold bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] transition-all rounded-2xl px-6 py-3.5 shadow-lg shadow-black/10 cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
