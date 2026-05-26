@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   title: "Muckly | Your App Mockups Made Easy",
   description: "Muckly is a premium SaaS that turns your raw mobile app emulator screenshots into clean, professional, and customizable device mockups instantly. Your app mockups made easy.",
   metadataBase: new URL("https://usemuckly.com"),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Muckly",
+  },
   icons: {
     icon: "/logo.png",
     shortcut: "/logo.png",
@@ -39,6 +45,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { PWARegistry } from "@/components/pwa-registry";
 
 export default function RootLayout({
   children,
@@ -54,6 +61,7 @@ export default function RootLayout({
       <head />
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider>
+          <PWARegistry />
           {children}
         </ThemeProvider>
       </body>
