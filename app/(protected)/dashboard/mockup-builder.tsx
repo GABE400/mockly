@@ -1577,7 +1577,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                   onClick={() => setShowPreviewModal(false)}
                   className="px-5 py-2.5 rounded-full border border-border-medium hover:bg-foreground/[0.04] text-xs font-black text-foreground-pure transition-all select-none cursor-pointer active:scale-95"
                 >
-                  Close Preview
+                  Cancel
                 </button>
                 <button
                   type="button"
