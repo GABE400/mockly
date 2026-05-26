@@ -111,7 +111,7 @@ export default async function BillingSettingsPage() {
       </header>
 
       {/* Main Container */}
-      <main className="relative z-10 mx-auto max-w-4xl px-6 py-12">
+      <main className="relative z-10 mx-auto max-w-4xl px-6 py-12 pb-28 md:py-12">
         
         {/* Back Link to Dashboard */}
         <div className="mb-6 text-left">

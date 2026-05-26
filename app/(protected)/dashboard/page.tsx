@@ -119,7 +119,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* Main Workspace */}
-      <main className="relative z-10 mx-auto max-w-7xl px-6 md:px-8 py-12">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 md:px-8 py-12 pb-28 md:py-12">
         
         {/* Welcome Section */}
         <section className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">

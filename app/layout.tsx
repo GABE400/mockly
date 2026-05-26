@@ -46,6 +46,7 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { PWARegistry } from "@/components/pwa-registry";
+import { MobileNav } from "@/components/mobile-nav";
 
 export default function RootLayout({
   children,
@@ -62,6 +63,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider>
           <PWARegistry />
+          <MobileNav />
           {children}
         </ThemeProvider>
       </body>
