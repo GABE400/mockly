@@ -975,8 +975,6 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
   // Find active node in React Flow (selected === true)
   const selectedNode = useMemo(() => nodes.find((n) => n.selected), [nodes]);
-  const activeNodeWidth = selectedNode?.width || 172;
-  const activeNodeHeight = selectedNode?.height || 364;
 
   // Dynamically compute node depths (active node on top)
   // Stable delete callback to prevent stale closures
@@ -1583,17 +1581,36 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                 </button>
                 <button
                   type="button"
-                  disabled={isExporting || (plan === "free" && userRole !== "admin" && usageCount >= 5)}
+                  disabled={isExporting}
                   onClick={() => {
-                    setShowPreviewModal(false);
-                    handleExport();
+                    if (plan === "free" && userRole !== "admin" && usageCount >= 5) {
+                      setShowLimitModal(true);
+                    } else {
+                      setShowPreviewModal(false);
+                      handleExport();
+                    }
                   }}
-                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white text-xs font-black shadow-lg shadow-indigo-500/10 active:scale-95 transition-all select-none cursor-pointer flex items-center gap-1.5"
+                  className={`px-6 py-2.5 rounded-full text-xs font-black shadow-lg transition-all select-none cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                    plan === "free" && userRole !== "admin" && usageCount >= 5
+                      ? "bg-rose-500/20 text-rose-300 border border-rose-500/20 hover:bg-rose-500/30"
+                      : "bg-gradient-to-r from-indigo-500 to-pink-500 text-white shadow-indigo-500/10 hover:shadow-indigo-500/20"
+                  }`}
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Export Design Now
+                  {plan === "free" && userRole !== "admin" && usageCount >= 5 ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Upgrade to Export
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Export Design Now
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -2392,9 +2409,10 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                                 onNodesChange(changes);
                               }}
                               nodeTypes={nodeTypes}
-                              fitView
-                              fitViewOptions={{ padding: 0 }}
-                              nodeExtent={[[16, 16], [1200 - activeNodeWidth - 16, 675 - activeNodeHeight - 16]]}
+                              fitView={false}
+                              defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+                              minZoom={1}
+                              maxZoom={1}
                               panOnScroll={false}
                               zoomOnScroll={false}
                               zoomOnPinch={false}
