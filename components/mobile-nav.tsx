@@ -56,7 +56,7 @@ export function MobileNav() {
 
   return (
     <div className="fixed bottom-4 inset-x-4 z-[120] md:hidden">
-      <nav className="w-full bg-[#090b11]/90 border border-border-medium/60 rounded-full shadow-[0_15px_35px_rgba(0,0,0,0.3)] backdrop-blur-lg flex items-center justify-around py-3.5 px-6 select-none animate-scale-in">
+      <nav className="w-full bg-bg-card/90 border border-border-medium rounded-full shadow-[0_12px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_15px_35px_rgba(0,0,0,0.4)] backdrop-blur-lg flex items-center justify-around py-3.5 px-6 select-none animate-scale-in">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -65,13 +65,13 @@ export function MobileNav() {
               href={item.href}
               className={`flex flex-col items-center justify-center gap-1 transition-all duration-300 relative ${
                 isActive 
-                  ? "text-indigo-400 font-bold scale-105" 
+                  ? "text-indigo-600 dark:text-indigo-400 font-bold scale-105" 
                   : "text-text-muted hover:text-foreground-pure"
               }`}
             >
               {/* Dynamic Highlight Accent Pill Behind Icon */}
               {isActive && (
-                <span className="absolute -top-1 w-8 h-1 bg-indigo-500 rounded-full shadow-[0_0_10px_#6366f1] animate-pulse" />
+                <span className="absolute -top-1 w-8 h-1 bg-indigo-600 dark:bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.4)] dark:shadow-[0_0_10px_#6366f1] animate-pulse" />
               )}
               
               <div className="transition-transform duration-300 active:scale-90">
