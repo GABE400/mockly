@@ -85,11 +85,27 @@ interface MockupBuilderProps {
 function CustomDeviceNode({ id, data, selected }: any) {
   const activeColor = FRAME_COLORS.find((c) => c.id === data.frameColor) || FRAME_COLORS[0];
   
-  let bezelColorClass = "border-[#1e2029] ring-[#slate-900]/40";
-  if (data.frameColor === "Light") bezelColorClass = "border-[#cbd5e1] ring-slate-100/50";
-  else if (data.frameColor === "Gold") bezelColorClass = "border-[#cbb483] ring-amber-100/30";
-  else if (data.frameColor === "Space Black") bezelColorClass = "border-[#0d0d11] ring-slate-950/60";
-  else if (data.frameColor === "Rose Gold") bezelColorClass = "border-[#f3d1c9] ring-pink-100/40";
+  let outerBezelBorder = "border-[#1e2029]";
+  let middleBezelBg = "bg-[#0b0c10]";
+  let lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]";
+  
+  if (data.frameColor === "Light") {
+    outerBezelBorder = "border-[#94a3b8]";
+    middleBezelBg = "bg-[#e2e8f0]";
+    lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.45)]";
+  } else if (data.frameColor === "Gold") {
+    outerBezelBorder = "border-[#b5942b]";
+    middleBezelBg = "bg-[#f1e4c3]";
+    lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]";
+  } else if (data.frameColor === "Space Black") {
+    outerBezelBorder = "border-[#090a0f]";
+    middleBezelBg = "bg-[#18191f]";
+    lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]";
+  } else if (data.frameColor === "Rose Gold") {
+    outerBezelBorder = "border-[#dfa295]";
+    middleBezelBg = "bg-[#f6e5e1]";
+    lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]";
+  }
 
   const buttonsColor = activeColor.hex;
   let transform3DStyle = "";
@@ -140,62 +156,102 @@ function CustomDeviceNode({ id, data, selected }: any) {
       }`}
       style={{ transform: transform3DStyle }}
     >
+      {/* Outer Titanium Layer (Double bezel rim) */}
       <div 
-        className={`w-full h-full rounded-[38px] border-[10px] bg-[#0c0d12] flex flex-col overflow-hidden relative shadow-inner ${bezelColorClass} ${shadowStyle}`}
+        className={`w-full h-full rounded-[38px] border-[8px] bg-[#0c0d12] flex flex-col overflow-hidden relative ${outerBezelBorder} ${middleBezelBg} ${lightChamferClass} ${shadowStyle}`}
       >
-        {/* Physical side buttons */}
-        <div className="absolute -left-[12px] top-[70px] w-[2px] h-[22px] rounded-l-md z-30" style={{ backgroundColor: buttonsColor }} />
-        <div className="absolute -left-[12px] top-[98px] w-[2px] h-[22px] rounded-l-md z-30" style={{ backgroundColor: buttonsColor }} />
-        <div className="absolute -right-[12px] top-[84px] w-[2px] h-[36px] rounded-r-md z-30" style={{ backgroundColor: buttonsColor }} />
+        {/* Physical side buttons with metal reflections */}
+        <div 
+          className="absolute -left-[10px] top-[70px] w-[3px] h-[22px] rounded-l-sm z-30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] border-y border-black/30" 
+          style={{ backgroundColor: buttonsColor }} 
+        />
+        <div 
+          className="absolute -left-[10px] top-[98px] w-[3px] h-[22px] rounded-l-sm z-30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] border-y border-black/30" 
+          style={{ backgroundColor: buttonsColor }} 
+        />
+        <div 
+          className="absolute -right-[10px] top-[84px] w-[3px] h-[36px] rounded-r-sm z-30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] border-y border-black/30" 
+          style={{ backgroundColor: buttonsColor }} 
+        />
 
-        {/* Notch dynamic layouts */}
+        {/* Notch dynamic layouts with glass lens reflections */}
         {(data.deviceFrame === "iPhone 17 Pro" || data.deviceFrame === "iPhone 16 Pro" || data.deviceFrame === "iPhone 15 Pro") && (
-          <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[42%] h-[16px] bg-[#000] rounded-full z-30 flex items-center justify-center">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#111] absolute right-[25%] shadow-[inset_0_1px_2px_rgba(255,255,255,0.15)]" />
+          <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[42%] h-[15px] bg-[#090a0f] border border-white/5 rounded-full z-30 flex items-center justify-center">
+            {/* Camera Lens Reflection */}
+            <span 
+              className="w-1.5 h-1.5 rounded-full absolute right-[25%] shadow-inner flex items-center justify-center" 
+              style={{
+                background: "radial-gradient(circle at 35% 35%, #2563eb 0%, #1e3a8a 50%, #030712 100%)",
+                opacity: 0.85
+              }}
+            >
+              <span className="w-0.5 h-0.5 rounded-full bg-white/40 absolute top-0.5 left-0.5" />
+            </span>
+            {/* Sensor Dot */}
+            <span className="w-1 h-1 rounded-full bg-[#1e2030] absolute left-[30%] opacity-40" />
           </div>
         )}
 
         {(data.deviceFrame === "iPhone 14" || data.deviceFrame === "iPhone 13") && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[52%] h-[18px] bg-[#000] rounded-b-[10px] z-30 flex items-center justify-center">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[52%] h-[18px] bg-[#090a0f] border-x border-b border-white/5 rounded-b-[10px] z-30 flex items-center justify-center">
             <span className="w-[45%] h-[2px] bg-[#222] rounded-full absolute top-[3px]" />
           </div>
         )}
 
         {data.deviceFrame === "Google Pixel 9 Pro" && (
-          <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-[9px] h-[9px] bg-[#000] rounded-full z-30 border border-slate-900 flex items-center justify-center">
-            <span className="w-1 h-1 rounded-full bg-[#111]" />
+          <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-[11px] h-[11px] bg-[#090a0f] rounded-full z-30 border border-white/5 flex items-center justify-center">
+            <span 
+              className="w-1.5 h-1.5 rounded-full shadow-inner flex items-center justify-center"
+              style={{
+                background: "radial-gradient(circle at 35% 35%, #2563eb 0%, #1e3a8a 50%, #030712 100%)",
+                opacity: 0.85
+              }}
+            >
+              <span className="w-0.5 h-0.5 rounded-full bg-white/40 absolute top-0.5 left-0.5" />
+            </span>
           </div>
         )}
 
         {data.deviceFrame === "Samsung Galaxy S24" && (
-          <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[7px] h-[7px] bg-[#000] rounded-full z-30 border border-slate-950 flex items-center justify-center" />
+          <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[7px] h-[7px] bg-[#000] rounded-full z-30 border border-white/5 flex items-center justify-center" />
         )}
 
         {data.deviceFrame === "Sony Xperia 1 VI" && (
-          <div className="absolute top-[6px] left-1/2 -translate-x-1/2 w-[8px] h-[8px] bg-[#000] rounded-full z-30 border border-slate-950 flex items-center justify-center" />
+          <div className="absolute top-[6px] left-1/2 -translate-x-1/2 w-[8px] h-[8px] bg-[#000] rounded-full z-30 border border-white/5 flex items-center justify-center" />
         )}
 
         {/* 1px inset ring */}
         <div className="absolute inset-0 rounded-[28px] border border-white/5 pointer-events-none z-20" />
 
-        {/* Content */}
-        <div className="w-full h-full relative rounded-[28px] overflow-hidden bg-black/5 flex items-center justify-center">
-          {data.screenshotUrl ? (
-            <img 
-              src={data.screenshotUrl} 
-              alt="Screenshot Preview" 
-              className="w-full h-full object-cover select-none pointer-events-none" 
+        {/* Inner Glass Bezel & Screen Wrapper */}
+        <div className="w-full h-full rounded-[29px] bg-black p-[3.5px] overflow-hidden flex relative">
+          <div className="w-full h-full relative rounded-[25px] overflow-hidden bg-[#0c0d12] flex items-center justify-center">
+            {data.screenshotUrl ? (
+              <img 
+                src={data.screenshotUrl} 
+                alt="Screenshot Preview" 
+                className="w-full h-full object-cover select-none pointer-events-none z-10" 
+              />
+            ) : (
+              <div className="w-full h-full bg-[#0c0d12] flex flex-col items-center justify-center p-4 text-center gap-1.5 z-10">
+                <svg className="w-6 h-6 text-text-dim animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 00-1.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                <span className="text-[8px] font-bold text-text-dim uppercase tracking-wider">No Asset Uploaded</span>
+                <span className="text-[7px] text-text-dim leading-snug">Drag & drop screen in sidebar</span>
+              </div>
+            )}
+
+            {/* Premium Dynamic Glass Glare Overlay */}
+            <div 
+              className="absolute inset-0 pointer-events-none z-20 opacity-85"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 65%)"
+              }}
             />
-          ) : (
-            <div className="w-full h-full bg-[#0c0d12] flex flex-col items-center justify-center p-4 text-center gap-1.5">
-              <svg className="w-6 h-6 text-text-dim animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-              </svg>
-              <span className="text-[8px] font-bold text-text-dim uppercase tracking-wider">No Asset Uploaded</span>
-              <span className="text-[7px] text-text-dim leading-snug">Drag & drop screen in sidebar</span>
-            </div>
-          )}
+          </div>
         </div>
+
       </div>
 
       {selected && (

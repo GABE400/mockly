@@ -308,11 +308,33 @@ export async function POST(request: NextRequest) {
             const shiftedX = (node.x ?? 0) - minX + paddingLeft;
             const shiftedY = (node.y ?? 0) - minY + paddingTop;
 
-            let bezelBorderColor = "#1e2029"; // Dark finish
-            if (node.frameColor === "Light") bezelBorderColor = "#cbd5e1";
-            else if (node.frameColor === "Gold") bezelBorderColor = "#b5942b";
-            else if (node.frameColor === "Space Black") bezelBorderColor = "#0d0d11";
-            else if (node.frameColor === "Rose Gold") bezelBorderColor = "#f3d1c9";
+            let outerBezelBorder = "#1e2029";
+            let middleBezelBg = "#0b0c10";
+            let lightChamferVal = "inset 0px 1px 1px rgba(255,255,255,0.15)";
+            
+            if (node.frameColor === "Light") {
+              outerBezelBorder = "#94a3b8";
+              middleBezelBg = "#e2e8f0";
+              lightChamferVal = "inset 0px 1px 1px rgba(255,255,255,0.45)";
+            } else if (node.frameColor === "Gold") {
+              outerBezelBorder = "#b5942b";
+              middleBezelBg = "#f1e4c3";
+              lightChamferVal = "inset 0px 1px 1px rgba(255,255,255,0.35)";
+            } else if (node.frameColor === "Space Black") {
+              outerBezelBorder = "#090a0f";
+              middleBezelBg = "#18191f";
+              lightChamferVal = "inset 0px 1px 1px rgba(255,255,255,0.1)";
+            } else if (node.frameColor === "Rose Gold") {
+              outerBezelBorder = "#dfa295";
+              middleBezelBg = "#f6e5e1";
+              lightChamferVal = "inset 0px 1px 1px rgba(255,255,255,0.3)";
+            }
+
+            const buttonsColor =
+              node.frameColor === "Light" ? "#cbd5e1" :
+              node.frameColor === "Gold" ? "#d4af37" :
+              node.frameColor === "Space Black" ? "#0d0d11" :
+              node.frameColor === "Rose Gold" ? "#f3d1c9" : "#1e1e24";
 
             // Satori 2D Skew Transformations matching Client perspective tilts
             let satoriTransform = "scale(0.92)";
@@ -324,11 +346,16 @@ export async function POST(request: NextRequest) {
               satoriTransform = "translateY(-20px) scale(0.88)";
             }
 
-            // Global drop shadow settings (Satori-compatible box-shadow properties)
+            // Combined drop shadow with light catch chamfer
             let shadowStyle = "0px 20px 30px rgba(0, 0, 0, 0.35)";
-            if (shadowIntensity === "None") shadowStyle = "none";
+            if (shadowIntensity === "None") shadowStyle = "";
             else if (shadowIntensity === "Soft") shadowStyle = "0px 15px 35px rgba(0, 0, 0, 0.25)";
             else if (shadowIntensity === "Dramatic") shadowStyle = "0px 30px 60px rgba(0, 0, 0, 0.55)";
+
+            // Combine the inset light chamfer and the outer drop shadow in Satori
+            const combinedBoxShadow = shadowStyle 
+              ? `${lightChamferVal}, ${shadowStyle}` 
+              : lightChamferVal;
 
             const renderDeviceFeature = () => {
               if (
@@ -344,12 +371,41 @@ export async function POST(request: NextRequest) {
                       left: "50%",
                       transform: "translateX(-50%)",
                       width: "42%",
-                      height: "16px",
-                      backgroundColor: "#000000",
+                      height: "15px",
+                      backgroundColor: "#090a0f",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
                       borderRadius: "8px",
                       zIndex: 30,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
-                  />
+                  >
+                    {/* Camera Lens Reflection */}
+                    <div
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        position: "absolute",
+                        right: "25%",
+                        background: "radial-gradient(circle at 35% 35%, #2563eb 0%, #1e3a8a 50%, #030712 100%)",
+                        opacity: 0.85,
+                      }}
+                    />
+                    {/* Sensor Dot */}
+                    <div
+                      style={{
+                        width: "4px",
+                        height: "4px",
+                        borderRadius: "50%",
+                        position: "absolute",
+                        left: "30%",
+                        backgroundColor: "#1e2030",
+                        opacity: 0.4,
+                      }}
+                    />
+                  </div>
                 );
               }
               if (
@@ -365,7 +421,10 @@ export async function POST(request: NextRequest) {
                       transform: "translateX(-50%)",
                       width: "52%",
                       height: "18px",
-                      backgroundColor: "#000000",
+                      backgroundColor: "#090a0f",
+                      borderLeft: "1px solid rgba(255, 255, 255, 0.05)",
+                      borderRight: "1px solid rgba(255, 255, 255, 0.05)",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
                       borderBottomLeftRadius: "10px",
                       borderBottomRightRadius: "10px",
                       zIndex: 30,
@@ -381,13 +440,27 @@ export async function POST(request: NextRequest) {
                       top: "10px",
                       left: "50%",
                       transform: "translateX(-50%)",
-                      width: "10px",
-                      height: "10px",
-                      backgroundColor: "#000000",
+                      width: "11px",
+                      height: "11px",
+                      backgroundColor: "#090a0f",
                       borderRadius: "50%",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
                       zIndex: 30,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
-                  />
+                  >
+                    <div
+                      style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        background: "radial-gradient(circle at 35% 35%, #2563eb 0%, #1e3a8a 50%, #030712 100%)",
+                        opacity: 0.85,
+                      }}
+                    />
+                  </div>
                 );
               }
               if (node.deviceFrame === "Samsung Galaxy S24") {
@@ -398,8 +471,8 @@ export async function POST(request: NextRequest) {
                       top: "8px",
                       left: "50%",
                       transform: "translateX(-50%)",
-                      width: "8px",
-                      height: "8px",
+                      width: "7px",
+                      height: "7px",
                       backgroundColor: "#000000",
                       borderRadius: "50%",
                       zIndex: 30,
@@ -445,96 +518,140 @@ export async function POST(request: NextRequest) {
                   zIndex: 10,
                 }}
               >
-                {/* Bezel finish accent wrapper */}
+                {/* Outer Titanium Layer (Double bezel rim) */}
                 <div
                   style={{
                     width: "100%",
                     height: "100%",
                     borderRadius: "38px",
-                    border: `10px solid ${bezelBorderColor}`,
-                    backgroundColor: "#0c0d12",
+                    border: `8px solid ${outerBezelBorder}`,
+                    backgroundColor: middleBezelBg,
                     display: "flex",
                     flexDirection: "column",
                     overflow: "hidden",
                     position: "relative",
-                    boxShadow: shadowStyle,
+                    boxShadow: combinedBoxShadow,
                   }}
                 >
-                  {/* Physical side buttons */}
+                  {/* Physical side buttons with metal reflections */}
                   <div
                     style={{
                       position: "absolute",
-                      left: "-12px",
+                      left: "-10px",
                       top: "70px",
-                      width: "2px",
+                      width: "3px",
                       height: "22px",
-                      backgroundColor: bezelBorderColor,
-                      borderRadius: "2px 0 0 2px",
+                      backgroundColor: buttonsColor,
+                      borderTopLeftRadius: "2px",
+                      borderBottomLeftRadius: "2px",
+                      boxShadow: "inset 0px 1px 1px rgba(255,255,255,0.3)",
+                      borderTop: "1px solid rgba(255,255,255,0.15)",
+                      borderBottom: "1px solid rgba(0,0,0,0.3)",
                     }}
                   />
                   <div
                     style={{
                       position: "absolute",
-                      left: "-12px",
+                      left: "-10px",
                       top: "98px",
-                      width: "2px",
+                      width: "3px",
                       height: "22px",
-                      backgroundColor: bezelBorderColor,
-                      borderRadius: "2px 0 0 2px",
+                      backgroundColor: buttonsColor,
+                      borderTopLeftRadius: "2px",
+                      borderBottomLeftRadius: "2px",
+                      boxShadow: "inset 0px 1px 1px rgba(255,255,255,0.3)",
+                      borderTop: "1px solid rgba(255,255,255,0.15)",
+                      borderBottom: "1px solid rgba(0,0,0,0.3)",
                     }}
                   />
                   <div
                     style={{
                       position: "absolute",
-                      right: "-12px",
+                      right: "-10px",
                       top: "84px",
-                      width: "2px",
+                      width: "3px",
                       height: "36px",
-                      backgroundColor: bezelBorderColor,
-                      borderRadius: "0 2px 2px 0",
+                      backgroundColor: buttonsColor,
+                      borderTopRightRadius: "2px",
+                      borderBottomRightRadius: "2px",
+                      boxShadow: "inset 0px 1px 1px rgba(255,255,255,0.3)",
+                      borderTop: "1px solid rgba(255,255,255,0.15)",
+                      borderBottom: "1px solid rgba(0,0,0,0.3)",
                     }}
                   />
 
                   {renderDeviceFeature()}
 
-                  {/* Screenshot layout */}
+                  {/* Inner Glass Bezel & Screen Wrapper */}
                   <div
                     style={{
                       width: "100%",
                       height: "100%",
-                      borderRadius: "28px",
+                      borderRadius: "29px",
+                      backgroundColor: "#000000",
+                      padding: "3.5px",
                       display: "flex",
                       overflow: "hidden",
-                      backgroundColor: "#161823",
+                      position: "relative",
                     }}
                   >
-                    {node.base64 ? (
-                      <img
-                        src={node.base64}
-                        alt="Screenshot Frame"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "25px",
+                        display: "flex",
+                        overflow: "hidden",
+                        position: "relative",
+                        backgroundColor: "#0c0d12",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {node.base64 ? (
+                        <img
+                          src={node.base64}
+                          alt="Screenshot Frame"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            position: "absolute",
+                            zIndex: 10,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: "#0c0d12",
+                            padding: "16px",
+                            position: "absolute",
+                            zIndex: 10,
+                          }}
+                        >
+                          <span style={{ fontSize: "8px", fontWeight: "bold", color: "rgba(255,255,255,0.4)" }}>NO ASSET</span>
+                        </div>
+                      )}
+
+                      {/* Premium Dynamic Glass Glare Overlay */}
                       <div
                         style={{
-                          width: "100%",
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: "#0c0d12",
-                          padding: "16px",
+                          position: "absolute",
+                          inset: 0,
+                          background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 65%)",
+                          zIndex: 20,
+                          opacity: 0.85,
                         }}
-                      >
-                        <span style={{ fontSize: "8px", fontWeight: "bold", color: "rgba(255,255,255,0.4)" }}>NO ASSET</span>
-                      </div>
-                    )}
+                      />
+                    </div>
                   </div>
+
                 </div>
               </div>
             );
@@ -597,8 +714,13 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // 7. Convert vector SVG to high-quality PNG with Sharp
-    const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
+    // 7. Convert vector SVG to ultra-crisp high-DPI retina PNG with Sharp (3x density scale)
+    const scaleMultiplier = 3;
+    const pngBuffer = await sharp(Buffer.from(svg), {
+      density: 72 * scaleMultiplier,
+    })
+      .png()
+      .toBuffer();
 
     // 8. Upload exported file to secure ImageKit mockup folder
     const uploadRes = await imagekit.upload({
