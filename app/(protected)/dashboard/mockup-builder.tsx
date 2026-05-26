@@ -8,6 +8,7 @@ import {
   BackgroundVariant,
   Node,
   ReactFlowProvider,
+  NodeResizer,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -151,11 +152,20 @@ function CustomDeviceNode({ id, data, selected }: any) {
 
   return (
     <div 
-      className={`relative w-[172px] h-[364px] flex flex-col items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
-        selected ? "ring-2 ring-indigo-500 rounded-[38px] scale-105 shadow-[0_0_20px_rgba(99,102,241,0.35)]" : ""
+      className={`relative w-full h-full flex flex-col items-center justify-center select-none ${
+        selected ? "ring-2 ring-indigo-500 rounded-[38px] scale-102 shadow-[0_0_20px_rgba(99,102,241,0.35)]" : ""
       }`}
       style={{ transform: transform3DStyle }}
     >
+      <NodeResizer 
+        color="#6366f1"
+        minWidth={100}
+        minHeight={212}
+        keepAspectRatio={true}
+        isVisible={selected}
+        handleStyle={{ width: 8, height: 8, borderRadius: 9999, backgroundColor: '#ffffff', border: '2px solid #6366f1' }}
+        lineStyle={{ border: '1.5px dashed #6366f1' }}
+      />
       {/* Outer Titanium Layer (Double bezel rim) */}
       <div 
         className={`w-full h-full rounded-[38px] border-[8px] bg-[#0c0d12] flex flex-col overflow-hidden relative ${outerBezelBorder} ${middleBezelBg} ${lightChamferClass} ${shadowStyle}`}
@@ -272,6 +282,192 @@ function CustomDeviceNode({ id, data, selected }: any) {
   );
 }
 
+// High Fidelity Static Device Mockup component for stacked board static previews
+function StaticDeviceMockup({ node, shadowIntensity }: { node: any; shadowIntensity: "None" | "Soft" | "Dramatic" }) {
+  const data = node.data || {};
+  const frameColor = data.frameColor || node.frameColor || "Dark";
+  const deviceFrame = data.deviceFrame || node.deviceFrame || "iPhone 17 Pro";
+  const tilt = data.tilt || node.tilt || "Flat";
+  const screenshotUrl = data.screenshotUrl || node.screenshotUrl;
+
+  const activeColor = FRAME_COLORS.find((c) => c.id === frameColor) || FRAME_COLORS[0];
+  
+  let outerBezelBorder = "border-[#1e2029]";
+  let middleBezelBg = "bg-[#0b0c10]";
+  let lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]";
+  
+  if (frameColor === "Light") {
+    outerBezelBorder = "border-[#94a3b8]";
+    middleBezelBg = "bg-[#e2e8f0]";
+    lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.45)]";
+  } else if (frameColor === "Gold") {
+    outerBezelBorder = "border-[#b5942b]";
+    middleBezelBg = "bg-[#f1e4c3]";
+    lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]";
+  } else if (frameColor === "Space Black") {
+    outerBezelBorder = "border-[#090a0f]";
+    middleBezelBg = "bg-[#18191f]";
+    lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]";
+  } else if (frameColor === "Rose Gold") {
+    outerBezelBorder = "border-[#dfa295]";
+    middleBezelBg = "bg-[#f6e5e1]";
+    lightChamferClass = "shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]";
+  }
+
+  const buttonsColor = activeColor.hex;
+  let transform3DStyle = "";
+  let shadowStyle = "";
+
+  const intensity = shadowIntensity || "Soft";
+
+  switch (tilt) {
+    case "Left Tilt":
+      transform3DStyle = "perspective(1200px) rotateY(-20deg) rotateX(8deg) rotateZ(3deg) scale(0.85)";
+      if (intensity === "Soft") {
+        shadowStyle = "drop-shadow(-16px 20px 25px rgba(0, 0, 0, 0.35))";
+      } else if (intensity === "Dramatic") {
+        shadowStyle = "drop-shadow(-28px 36px 48px rgba(0, 0, 0, 0.6)) drop-shadow(-4px 8px 16px rgba(0, 0, 0, 0.3))";
+      }
+      break;
+    case "Right Tilt":
+      transform3DStyle = "perspective(1200px) rotateY(20deg) rotateX(8deg) rotateZ(-3deg) scale(0.85)";
+      if (intensity === "Soft") {
+        shadowStyle = "drop-shadow(16px 20px 25px rgba(0, 0, 0, 0.35))";
+      } else if (intensity === "Dramatic") {
+        shadowStyle = "drop-shadow(28px 36px 48px rgba(0, 0, 0, 0.6)) drop-shadow(4px 8px 16px rgba(0, 0, 0, 0.3))";
+      }
+      break;
+    case "Floating":
+      transform3DStyle = "perspective(1200px) rotateX(12deg) translateY(-12px) scale(0.88)";
+      if (intensity === "Soft") {
+        shadowStyle = "drop-shadow(0 20px 30px rgba(0, 0, 0, 0.35))";
+      } else if (intensity === "Dramatic") {
+        shadowStyle = "drop-shadow(0 40px 60px rgba(0, 0, 0, 0.65)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4))";
+      }
+      break;
+    case "Flat":
+    default:
+      transform3DStyle = "perspective(1200px) scale(0.92)";
+      if (intensity === "Soft") {
+        shadowStyle = "drop-shadow(0 12px 20px rgba(0, 0, 0, 0.25))";
+      } else if (intensity === "Dramatic") {
+        shadowStyle = "drop-shadow(0 30px 45px rgba(0, 0, 0, 0.55)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3))";
+      }
+      break;
+  }
+
+  const width = node.width || 172;
+  const height = node.height || 364;
+
+  return (
+    <div 
+      className="relative flex flex-col items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none"
+      style={{ 
+        transform: transform3DStyle,
+        width: `${width}px`,
+        height: `${height}px`
+      }}
+    >
+      {/* Outer Titanium Layer (Double bezel rim) */}
+      <div 
+        className={`w-full h-full rounded-[38px] border-[8px] bg-[#0c0d12] flex flex-col overflow-hidden relative ${outerBezelBorder} ${middleBezelBg} ${lightChamferClass} ${shadowStyle}`}
+      >
+        {/* Physical side buttons with metal reflections */}
+        <div 
+          className="absolute -left-[10px] top-[70px] w-[3px] h-[22px] rounded-l-sm z-30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] border-y border-black/30" 
+          style={{ backgroundColor: buttonsColor }} 
+        />
+        <div 
+          className="absolute -left-[10px] top-[98px] w-[3px] h-[22px] rounded-l-sm z-30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] border-y border-black/30" 
+          style={{ backgroundColor: buttonsColor }} 
+        />
+        <div 
+          className="absolute -right-[10px] top-[84px] w-[3px] h-[36px] rounded-r-sm z-30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] border-y border-black/30" 
+          style={{ backgroundColor: buttonsColor }} 
+        />
+
+        {/* Notch dynamic layouts with glass lens reflections */}
+        {(deviceFrame === "iPhone 17 Pro" || deviceFrame === "iPhone 16 Pro" || deviceFrame === "iPhone 15 Pro") && (
+          <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[42%] h-[15px] bg-[#090a0f] border border-white/5 rounded-full z-30 flex items-center justify-center">
+            {/* Camera Lens Reflection */}
+            <span 
+              className="w-1.5 h-1.5 rounded-full absolute right-[25%] shadow-inner flex items-center justify-center" 
+              style={{
+                background: "radial-gradient(circle at 35% 35%, #2563eb 0%, #1e3a8a 50%, #030712 100%)",
+                opacity: 0.85
+              }}
+            >
+              <span className="w-0.5 h-0.5 rounded-full bg-white/40 absolute top-0.5 left-0.5" />
+            </span>
+            {/* Sensor Dot */}
+            <span className="w-1 h-1 rounded-full bg-[#1e2030] absolute left-[30%] opacity-40" />
+          </div>
+        )}
+
+        {(deviceFrame === "iPhone 14" || deviceFrame === "iPhone 13") && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[52%] h-[18px] bg-[#090a0f] border-x border-b border-white/5 rounded-b-[10px] z-30 flex items-center justify-center">
+            <span className="w-[45%] h-[2px] bg-[#222] rounded-full absolute top-[3px]" />
+          </div>
+        )}
+
+        {deviceFrame === "Google Pixel 9 Pro" && (
+          <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-[11px] h-[11px] bg-[#090a0f] rounded-full z-30 border border-white/5 flex items-center justify-center">
+            <span 
+              className="w-1.5 h-1.5 rounded-full shadow-inner flex items-center justify-center"
+              style={{
+                background: "radial-gradient(circle at 35% 35%, #2563eb 0%, #1e3a8a 50%, #030712 100%)",
+                opacity: 0.85
+              }}
+            >
+              <span className="w-0.5 h-0.5 rounded-full bg-white/40 absolute top-0.5 left-0.5" />
+            </span>
+          </div>
+        )}
+
+        {deviceFrame === "Samsung Galaxy S24" && (
+          <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[7px] h-[7px] bg-[#000] rounded-full z-30 border border-white/5 flex items-center justify-center" />
+        )}
+
+        {deviceFrame === "Sony Xperia 1 VI" && (
+          <div className="absolute top-[6px] left-1/2 -translate-x-1/2 w-[8px] h-[8px] bg-[#000] rounded-full z-30 border border-white/5 flex items-center justify-center" />
+        )}
+
+        {/* 1px inset ring */}
+        <div className="absolute inset-0 rounded-[28px] border border-white/5 pointer-events-none z-20" />
+
+        {/* Inner Glass Bezel & Screen Wrapper */}
+        <div className="w-full h-full rounded-[29px] bg-black p-[3.5px] overflow-hidden flex relative">
+          <div className="w-full h-full relative rounded-[25px] overflow-hidden bg-[#0c0d12] flex items-center justify-center">
+            {screenshotUrl ? (
+              <img 
+                src={screenshotUrl} 
+                alt="Screenshot Preview" 
+                className="w-full h-full object-cover select-none pointer-events-none z-10" 
+              />
+            ) : (
+              <div className="w-full h-full bg-[#0c0d12] flex flex-col items-center justify-center p-4 text-center gap-1.5 z-10">
+                <svg className="w-6 h-6 text-text-dim animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 00-1.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                <span className="text-[8px] font-bold text-text-dim uppercase tracking-wider">No Asset</span>
+              </div>
+            )}
+
+            {/* Premium Dynamic Glass Glare Overlay */}
+            <div 
+              className="absolute inset-0 pointer-events-none z-20 opacity-85"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 65%)"
+              }}
+            />
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 const nodeTypes = {
   deviceMockup: CustomDeviceNode,
 };
@@ -304,6 +500,44 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   // React Flow Nodes
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
 
+  interface Board {
+    id: string;
+    title: string;
+    selectedBg: string;
+    customBgColor: string;
+    shadowIntensity: "None" | "Soft" | "Dramatic";
+    paddingLevel: "Compact" | "Standard" | "Spacious";
+    textOverlay: string;
+    textPosition: "Top" | "Bottom";
+    textFontSize: number;
+    textColor: string;
+    textWeight: "normal" | "medium" | "bold" | "extrabold";
+    gridVisible: boolean;
+    gridVariant: "dots" | "lines" | "cross";
+    nodes: Node[];
+  }
+
+  // Multi-Board stacking presentation slides state
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [activeBoardId, setActiveBoardId] = useState<string>("");
+  const prevActiveBoardIdRef = useRef<string>("");
+
+  const hydrateLocalStates = (board: Board) => {
+    setTitle(board.title);
+    setSelectedBg(board.selectedBg);
+    setCustomBgColor(board.customBgColor || "");
+    setShadowIntensity(board.shadowIntensity || "Soft");
+    setPaddingLevel(board.paddingLevel || "Standard");
+    setTextOverlay(board.textOverlay || "");
+    setTextPosition(board.textPosition || "Top");
+    setTextFontSize(board.textFontSize || 32);
+    setTextColor(board.textColor || "");
+    setTextWeight(board.textWeight || "bold");
+    setGridVisible(board.gridVisible !== undefined ? board.gridVisible : true);
+    setGridVariant(board.gridVariant || "dots");
+    setNodes(board.nodes || []);
+  };
+
   // Load saved workspace state from localStorage on mount
   useEffect(() => {
     if (!mounted) return;
@@ -311,52 +545,96 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
       const saved = localStorage.getItem("mockly_workspace_state");
       if (saved) {
         const state = JSON.parse(saved);
-        if (state.title !== undefined) setTitle(state.title);
-        if (state.selectedBg !== undefined) setSelectedBg(state.selectedBg);
-        if (state.customBgColor !== undefined) setCustomBgColor(state.customBgColor);
-        if (state.shadowIntensity !== undefined) setShadowIntensity(state.shadowIntensity);
-        if (state.paddingLevel !== undefined) setPaddingLevel(state.paddingLevel);
-        if (state.textOverlay !== undefined) setTextOverlay(state.textOverlay);
-        if (state.textPosition !== undefined) setTextPosition(state.textPosition);
-        if (state.textFontSize !== undefined) setTextFontSize(state.textFontSize);
-        if (state.textColor !== undefined) setTextColor(state.textColor);
-        if (state.textWeight !== undefined) setTextWeight(state.textWeight);
-        if (state.gridVisible !== undefined) setGridVisible(state.gridVisible);
-        if (state.gridVariant !== undefined) setGridVariant(state.gridVariant);
-        if (state.nodes !== undefined && Array.isArray(state.nodes)) {
-          setNodes(state.nodes);
+        if (state.boards && Array.isArray(state.boards) && state.boards.length > 0) {
+          setBoards(state.boards);
+          setActiveBoardId(state.activeBoardId || state.boards[0].id);
+          const active = state.boards.find((b: any) => b.id === (state.activeBoardId || state.boards[0].id)) || state.boards[0];
+          hydrateLocalStates(active);
+        } else {
+          // Legacy format fallback
+          const legacyBoard: Board = {
+            id: `board-${Date.now()}`,
+            title: state.title ?? "My App Shot",
+            selectedBg: state.selectedBg ?? BACKGROUND_PRESETS[0].id,
+            customBgColor: state.customBgColor ?? "",
+            shadowIntensity: state.shadowIntensity ?? "Soft",
+            paddingLevel: state.paddingLevel ?? "Standard",
+            textOverlay: state.textOverlay ?? "",
+            textPosition: state.textPosition ?? "Top",
+            textFontSize: state.textFontSize ?? 32,
+            textColor: state.textColor ?? "",
+            textWeight: state.textWeight ?? "bold",
+            gridVisible: state.gridVisible !== undefined ? state.gridVisible : true,
+            gridVariant: state.gridVariant ?? "dots",
+            nodes: state.nodes || [],
+          };
+          setBoards([legacyBoard]);
+          setActiveBoardId(legacyBoard.id);
+          hydrateLocalStates(legacyBoard);
         }
+      } else {
+        // Brand new state
+        const newBoard: Board = {
+          id: `board-${Date.now()}`,
+          title: "My App Shot",
+          selectedBg: BACKGROUND_PRESETS[0].id,
+          customBgColor: "",
+          shadowIntensity: "Soft",
+          paddingLevel: "Standard",
+          textOverlay: "",
+          textPosition: "Top",
+          textFontSize: 32,
+          textColor: "",
+          textWeight: "bold",
+          gridVisible: true,
+          gridVariant: "dots",
+          nodes: [],
+        };
+        setBoards([newBoard]);
+        setActiveBoardId(newBoard.id);
+        hydrateLocalStates(newBoard);
       }
     } catch (e) {
       console.error("Failed to load saved workspace state:", e);
     }
-  }, [mounted, setNodes]);
+  }, [mounted]);
 
-  // Save workspace state to localStorage on changes
+  // Sync active local settings back into the active board object in boards array
   useEffect(() => {
-    if (!mounted) return;
-    try {
-      const state = {
-        title,
-        selectedBg,
-        customBgColor,
-        shadowIntensity,
-        paddingLevel,
-        textOverlay,
-        textPosition,
-        textFontSize,
-        textColor,
-        textWeight,
-        gridVisible,
-        gridVariant,
-        nodes,
-      };
-      localStorage.setItem("mockly_workspace_state", JSON.stringify(state));
-    } catch (e) {
-      console.error("Failed to save workspace state:", e);
+    // If we just switched the active board, do NOT sync local states back to the new board.
+    // Instead, wait for the state hydration to complete to avoid race conditions.
+    if (prevActiveBoardIdRef.current !== activeBoardId) {
+      prevActiveBoardIdRef.current = activeBoardId;
+      return;
     }
+
+    if (!mounted || !activeBoardId || boards.length === 0) return;
+    setBoards((prev) =>
+      prev.map((b) => {
+        if (b.id === activeBoardId) {
+          return {
+            ...b,
+            title,
+            selectedBg,
+            customBgColor,
+            shadowIntensity,
+            paddingLevel,
+            textOverlay,
+            textPosition,
+            textFontSize,
+            textColor,
+            textWeight,
+            gridVisible,
+            gridVariant,
+            nodes,
+          };
+        }
+        return b;
+      })
+    );
   }, [
     mounted,
+    activeBoardId,
     title,
     selectedBg,
     customBgColor,
@@ -371,6 +649,20 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     gridVariant,
     nodes,
   ]);
+
+  // Persist entire multi-board structure to localStorage
+  useEffect(() => {
+    if (!mounted || boards.length === 0) return;
+    try {
+      const state = {
+        boards,
+        activeBoardId,
+      };
+      localStorage.setItem("mockly_workspace_state", JSON.stringify(state));
+    } catch (e) {
+      console.error("Failed to save workspace state to localStorage:", e);
+    }
+  }, [mounted, boards, activeBoardId]);
 
   const isLightColor = (hex: string) => {
     if (!hex) return false;
@@ -457,6 +749,98 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     };
   }, []);
 
+  // 1. Add Board Page
+  const handleAddBoard = () => {
+    const newBoardId = `board-${Date.now()}`;
+    const newBoard: Board = {
+      id: newBoardId,
+      title: `Board Page ${boards.length + 1}`,
+      selectedBg: BACKGROUND_PRESETS[0].id,
+      customBgColor: "",
+      shadowIntensity: "Soft",
+      paddingLevel: "Standard",
+      textOverlay: "",
+      textPosition: "Top",
+      textFontSize: 32,
+      textColor: "",
+      textWeight: "bold",
+      gridVisible: true,
+      gridVariant: "dots",
+      nodes: [],
+    };
+    setBoards([...boards, newBoard]);
+    setActiveBoardId(newBoardId);
+    hydrateLocalStates(newBoard);
+    showToast("Added new slide board!", "success");
+  };
+
+  // 2. Duplicate Board Page
+  const handleDuplicateBoard = (boardToDuplicate: Board) => {
+    const newBoardId = `board-${Date.now()}`;
+    // Clone nodes with unique React Flow IDs to prevent duplication conflicts
+    const clonedNodes = boardToDuplicate.nodes.map((n, i) => ({
+      ...n,
+      id: `node-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 5)}`,
+      selected: false,
+    }));
+
+    const duplicatedBoard: Board = {
+      ...boardToDuplicate,
+      id: newBoardId,
+      title: `${boardToDuplicate.title} (Copy)`,
+      nodes: clonedNodes,
+    };
+
+    // Insert duplicated board right after the duplicated slide
+    const index = boards.findIndex((b) => b.id === boardToDuplicate.id);
+    const updatedBoards = [...boards];
+    updatedBoards.splice(index + 1, 0, duplicatedBoard);
+
+    setBoards(updatedBoards);
+    setActiveBoardId(newBoardId);
+    hydrateLocalStates(duplicatedBoard);
+    showToast("Duplicated slide board successfully!", "success");
+  };
+
+  // 3. Delete Board Page
+  const handleDeleteBoard = (id: string) => {
+    if (boards.length <= 1) {
+      showToast("Cannot delete: You must have at least one board.", "error");
+      return;
+    }
+
+    const updatedBoards = boards.filter((b) => b.id !== id);
+    setBoards(updatedBoards);
+
+    // If the active board was deleted, switch active pointer to another one
+    if (activeBoardId === id) {
+      const remainingBoard = updatedBoards[0];
+      setActiveBoardId(remainingBoard.id);
+      hydrateLocalStates(remainingBoard);
+    }
+    showToast("Slide board removed from workspace.", "success");
+  };
+
+  // 4. Move Board Up
+  const handleMoveBoardUp = (index: number) => {
+    if (index === 0) return;
+    const updated = [...boards];
+    const temp = updated[index];
+    updated[index] = updated[index - 1];
+    updated[index - 1] = temp;
+    setBoards(updated);
+  };
+
+  // 5. Move Board Down
+  const handleMoveBoardDown = (index: number) => {
+    if (index === boards.length - 1) return;
+    const updated = [...boards];
+    const temp = updated[index];
+    updated[index] = updated[index + 1];
+    updated[index + 1] = temp;
+    setBoards(updated);
+  };
+
   // Image Upload State
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -468,8 +852,109 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   const [usageCount, setUsageCount] = useState(initialUsage);
   const [mockupsList, setMockupsList] = useState<MockupRecord[]>(initialMockups);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const maxScreens = plan === "free" ? 3 : 7;
+
+  // Dynamic Bounding Box calculation for rendering exact cropped preview inside the modal
+  const previewData = useMemo(() => {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const node of nodes) {
+      const x = node.position.x ?? 0;
+      const y = node.position.y ?? 0;
+      const w = node.width ?? 172;
+      const h = node.height ?? 364;
+
+      if (x < minX) minX = x;
+      if (x + w > maxX) maxX = x + w;
+      if (y < minY) minY = y;
+      if (y + h > maxY) maxY = y + h;
+    }
+
+    if (minX === Infinity) minX = 0;
+    if (maxX === -Infinity) maxX = 1200;
+    if (minY === Infinity) minY = 0;
+    if (maxY === -Infinity) maxY = 675;
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+
+    let paddingValue = 48; // Default Standard
+    if (paddingLevel === "Compact") paddingValue = 24;
+    else if (paddingLevel === "Spacious") paddingValue = 80;
+
+    let textSpace = 0;
+    if (textOverlay) {
+      textSpace = (textFontSize || 32) * 1.5 + 24;
+    }
+
+    const paddingTop = paddingValue + (textOverlay && textPosition === "Top" ? textSpace : 0);
+    const paddingBottom = paddingValue + (textOverlay && textPosition === "Bottom" ? textSpace : 0);
+    const paddingLeft = paddingValue;
+    const paddingRight = paddingValue;
+
+    const exportWidth = Math.round(contentWidth + paddingLeft + paddingRight);
+    const exportHeight = Math.round(contentHeight + paddingTop + paddingBottom);
+
+    return {
+      minX,
+      minY,
+      paddingTop,
+      paddingLeft,
+      paddingRight,
+      paddingBottom,
+      exportWidth,
+      exportHeight,
+    };
+  }, [nodes, paddingLevel, textOverlay, textPosition, textFontSize]);
+
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [zoomMode, setZoomMode] = useState<"fit" | "custom">("fit");
+  const [customZoom, setCustomZoom] = useState<number>(100);
+  const [fitScale, setFitScale] = useState<number>(1);
+
+  useEffect(() => {
+    if (!showPreviewModal) return;
+    const updateScale = () => {
+      if (!previewContainerRef.current) return;
+      
+      const containerWidth = previewContainerRef.current.clientWidth - 48; // padding
+      const containerHeight = previewContainerRef.current.clientHeight - 80; // height padding for toolbar & spacing
+      
+      if (containerWidth <= 0 || containerHeight <= 0) return;
+
+      const wScale = containerWidth / previewData.exportWidth;
+      const hScale = containerHeight / previewData.exportHeight;
+      
+      const scale = Math.min(wScale, hScale);
+      setFitScale(scale > 0 ? scale : 1);
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && previewContainerRef.current) {
+      observer = new ResizeObserver(() => {
+        updateScale();
+      });
+      observer.observe(previewContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateScale);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [showPreviewModal, previewData.exportWidth, previewData.exportHeight]);
+
+  const currentScale = zoomMode === "fit" ? fitScale : customZoom / 100;
+
 
   const handleUpgrade = async () => {
     setIsUpgrading(true);
@@ -490,6 +975,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
   // Find active node in React Flow (selected === true)
   const selectedNode = useMemo(() => nodes.find((n) => n.selected), [nodes]);
+  const activeNodeWidth = selectedNode?.width || 172;
+  const activeNodeHeight = selectedNode?.height || 364;
 
   // Dynamically compute node depths (active node on top)
   // Stable delete callback to prevent stale closures
@@ -608,6 +1095,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
             x: xPos,
             y: yPos,
           },
+          width: 172,
+          height: 364,
           data: {
             screenshotUrl: data.url,
             deviceFrame: DEVICE_FRAMES[0].id,
@@ -680,9 +1169,23 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   }, [mounted]);
 
   // Export PNG compiles complete coordinate array
-  const handleExport = async () => {
-    if (nodes.length === 0) {
-      showToast("Please upload at least one screenshot first!", "error");
+  const handleExport = async (boardToExport?: Board) => {
+    const targetBoard = boardToExport || {
+      title,
+      selectedBg,
+      customBgColor,
+      shadowIntensity,
+      paddingLevel,
+      textOverlay,
+      textPosition,
+      textFontSize,
+      textColor,
+      textWeight,
+      nodes,
+    };
+
+    if (targetBoard.nodes.length === 0) {
+      showToast(`Please upload at least one screenshot to "${targetBoard.title}" first!`, "error");
       return;
     }
 
@@ -695,56 +1198,116 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
     try {
       // Map React Flow nodes list to simplified absolute payload coordinate structures
-      const nodesPayload = nodes.map((n) => ({
+      const nodesPayload = targetBoard.nodes.map((n) => ({
         id: n.id,
         x: n.position.x,
         y: n.position.y,
-        screenshotUrl: n.data.screenshotUrl,
-        deviceFrame: n.data.deviceFrame,
-        frameColor: n.data.frameColor,
-        tilt: n.data.tilt,
+        width: n.width || 172,
+        height: n.height || 364,
+        screenshotUrl: (n as any).screenshotUrl || n.data?.screenshotUrl,
+        deviceFrame: (n as any).deviceFrame || n.data?.deviceFrame,
+        frameColor: (n as any).frameColor || n.data?.frameColor,
+        tilt: (n as any).tilt || n.data?.tilt,
         selected: n.selected || false,
       }));
+
+      console.log("[Export Debug] Payload nodes count:", nodesPayload.length);
+      console.log("[Export Debug] First node sample:", JSON.stringify(nodesPayload[0], null, 2));
+
+      const requestBody = {
+        title: targetBoard.title.trim() || "My App Mockup",
+        background: targetBoard.selectedBg,
+        customBgColor: targetBoard.customBgColor || null,
+        shadowIntensity: targetBoard.shadowIntensity,
+        paddingLevel: targetBoard.paddingLevel,
+        textOverlay: targetBoard.textOverlay ? targetBoard.textOverlay.trim() : null,
+        textPosition: targetBoard.textPosition,
+        textFontSize: targetBoard.textFontSize,
+        textColor: targetBoard.textColor || null,
+        textWeight: targetBoard.textWeight,
+        nodes: nodesPayload,
+        // Legacy backward compatibility placeholders
+        screenshotUrl: nodesPayload[0]?.screenshotUrl || null,
+        deviceFrame: nodesPayload[0]?.deviceFrame || null,
+        tilt: nodesPayload[0]?.tilt || null,
+      };
+
+      console.log("[Export Debug] background:", requestBody.background);
+      console.log("[Export Debug] screenshotUrl present:", !!requestBody.screenshotUrl);
 
       const res = await fetch("/api/mockups/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim() || "My App Mockup",
-          background: selectedBg,
-          customBgColor: customBgColor || null,
-          shadowIntensity,
-          paddingLevel,
-          textOverlay: textOverlay.trim() || null,
-          textPosition,
-          textFontSize,
-          textColor: textColor || null,
-          textWeight,
-          nodes: nodesPayload,
-          // Legacy backward compatibility placeholders
-          screenshotUrl: nodesPayload[0]?.screenshotUrl || null,
-          deviceFrame: nodesPayload[0]?.deviceFrame || null,
-          tilt: nodesPayload[0]?.tilt || null,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await res.json();
+      console.log("[Export Debug] Response status:", res.status, "data:", data);
       if (!res.ok) throw new Error(data.error || "Export failed.");
 
       setMockupsList([data.mockup, ...mockupsList]);
-      setUsageCount(usageCount + 1);
-      showToast("Premium PNG generated successfully!", "success");
+      setUsageCount((prev) => prev + 1);
+      showToast(`Exported "${targetBoard.title}" successfully!`, "success");
 
       await handleDirectDownload(
         data.mockup.mockupUrl,
-        `${title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`
+        `${targetBoard.title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`
       );
 
     } catch (err: any) {
-      console.error(err);
+      console.error("[Export Debug] Export error:", err);
+      console.error("[Export Debug] Error message:", err.message);
       showToast(err.message || "Failed to generate mockup.", "error");
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const [isBulkExporting, setIsBulkExporting] = useState(false);
+
+  const handleBulkExport = async () => {
+    const validBoards = boards.filter((b) => b.nodes.length > 0);
+    if (validBoards.length === 0) {
+      showToast("None of your boards contain screenshots. Please add assets before exporting!", "error");
+      return;
+    }
+
+    if (plan === "free" && userRole !== "admin" && usageCount + validBoards.length > 5) {
+      setShowLimitModal(true);
+      return;
+    }
+
+    setIsBulkExporting(true);
+    showToast(`Bulk exporting ${validBoards.length} slides... Please wait!`, "success");
+
+    try {
+      // Export all boards concurrently
+      const exportPromises = validBoards.map((b) => handleExport(b));
+      await Promise.all(exportPromises);
+      showToast("All mockups compiled and downloaded successfully!", "success");
+    } catch (err: any) {
+      console.error("Bulk export encountered errors:", err);
+    } finally {
+      setIsBulkExporting(false);
+    }
+  };
+
+  const handleDeleteMockup = async (mockupId: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this generated mockup?")) return;
+
+    try {
+      const res = await fetch(`/api/mockups/delete?id=${mockupId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed.");
+
+      setMockupsList((prev) => prev.filter((m) => m.id !== mockupId));
+      showToast("Mockup deleted successfully!", "success");
+    } catch (err: any) {
+      console.error("Delete mockup error:", err);
+      showToast(err.message || "Failed to delete mockup.", "error");
     }
   };
 
@@ -807,6 +1370,234 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                 Maybe Later
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sleek High-Fidelity Preview Modal */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 bg-[#06080d]/85 backdrop-blur-xl z-[150] flex flex-col items-center justify-center p-4 md:p-6">
+          <div className="bg-[#090b11]/95 border border-border-medium rounded-[32px] max-w-5xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden relative backdrop-blur-md animate-scale-in">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+            
+            {/* Header */}
+            <div className="p-6 border-b border-border-subtle flex items-center justify-between bg-foreground/[0.01]">
+              <div className="flex flex-col text-left gap-1">
+                <h3 className="text-sm font-black tracking-widest text-foreground-pure uppercase flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  WYSIWYG Live Mockup Preview
+                </h3>
+                <p className="text-[10px] text-text-muted">
+                  Cropped aspect ratio preview of "{title.trim() || "My App Mockup"}" before exporting.
+                </p>
+              </div>
+              
+              <button 
+                onClick={() => setShowPreviewModal(false)}
+                className="w-8 h-8 rounded-full bg-foreground/[0.03] border border-border-medium text-text-dim hover:text-foreground-pure flex items-center justify-center hover:bg-foreground/[0.08] transition-all cursor-pointer"
+                title="Close preview"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Preview Viewport Canvas */}
+            <div 
+              ref={previewContainerRef}
+              className={`flex-1 p-8 bg-[#030407]/45 flex items-center justify-center min-h-[350px] max-h-[60vh] relative ${
+                zoomMode === "fit" ? "overflow-hidden" : "overflow-auto"
+              }`}
+            >
+              {/* Floating Glassmorphic Zoom Control Pill */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] bg-[#0c0f17]/90 backdrop-blur-md border border-white/10 rounded-full px-4 py-1.5 flex items-center gap-3 shadow-xl select-none">
+                {/* Auto-Fit Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setZoomMode("fit")}
+                  className={`text-[9px] font-black uppercase tracking-wider px-3 py-1 rounded-full border transition-all cursor-pointer ${
+                    zoomMode === "fit"
+                      ? "bg-indigo-500 text-white border-indigo-400"
+                      : "bg-white/5 border-white/5 text-text-muted hover:text-foreground-pure hover:bg-white/10"
+                  }`}
+                >
+                  Fit ({Math.round(fitScale * 100)}%)
+                </button>
+                
+                {/* Separator */}
+                <span className="w-px h-3.5 bg-white/15" />
+
+                {/* Zoom Out Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoomMode("custom");
+                    setCustomZoom(prev => Math.max(10, prev - 10));
+                  }}
+                  className="w-6 h-6 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 flex items-center justify-center text-text-muted hover:text-foreground-pure transition-all active:scale-90 cursor-pointer"
+                  title="Zoom Out"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
+                  </svg>
+                </button>
+
+                {/* Slider */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="10"
+                    max="200"
+                    value={zoomMode === "fit" ? Math.round(fitScale * 100) : customZoom}
+                    onChange={(e) => {
+                      setZoomMode("custom");
+                      setCustomZoom(parseInt(e.target.value));
+                    }}
+                    className="w-16 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500 focus:outline-none"
+                    style={{
+                      WebkitAppearance: 'none'
+                    }}
+                  />
+                  <span className="text-[9px] font-black text-foreground-pure font-mono min-w-[28px] text-right">
+                    {zoomMode === "fit" ? Math.round(fitScale * 100) : customZoom}%
+                  </span>
+                </div>
+
+                {/* Zoom In Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoomMode("custom");
+                    setCustomZoom(prev => Math.min(200, prev + 10));
+                  }}
+                  className="w-6 h-6 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 flex items-center justify-center text-text-muted hover:text-foreground-pure transition-all active:scale-90 cursor-pointer"
+                  title="Zoom In"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Exact scale wrapper layout for scrolling support and visual layout footprint */}
+              <div 
+                className="flex items-center justify-center flex-shrink-0"
+                style={{
+                  width: `${previewData.exportWidth * currentScale}px`,
+                  height: `${previewData.exportHeight * currentScale}px`,
+                  transition: "width 0.15s ease, height 0.15s ease",
+                }}
+              >
+                <div 
+                  className="relative shadow-2xl border border-white/5 overflow-hidden flex origin-top-left flex-shrink-0"
+                  style={{
+                    width: `${previewData.exportWidth}px`,
+                    height: `${previewData.exportHeight}px`,
+                    transform: `scale(${currentScale})`,
+                    transformOrigin: "top left",
+                    background: customBgColor || (BACKGROUND_PRESETS.find((b) => b.id === selectedBg)?.style || BACKGROUND_PRESETS[0].style),
+                  }}
+                >
+                  {/* Presentational grid layer overlay */}
+                  {gridVisible && (
+                    <div
+                      className="absolute inset-0 flex flex-wrap opacity-[0.06] pointer-events-none"
+                    >
+                      {Array.from({ length: Math.ceil((previewData.exportWidth * previewData.exportHeight) / 6400) }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-[80px] h-[80px] border-r border-b border-white"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Typography Headline Overlay */}
+                  {textOverlay && (
+                    <div
+                      className="absolute left-0 right-0 flex justify-center items-center z-40"
+                      style={{
+                        top: textPosition === "Top" ? `24px` : "auto",
+                        bottom: textPosition === "Bottom" ? `24px` : "auto",
+                      }}
+                    >
+                      <span
+                        className="tracking-tight leading-none text-center select-none font-sans"
+                        style={{
+                          fontSize: `${textFontSize}px`,
+                          fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? 700 : 800,
+                          color: textColor || (selectedBg === "white" || selectedBg === "candy" ? "#000000" : "#ffffff"),
+                          textShadow: "0 2px 10px rgba(0, 0, 0, 0.15)",
+                        }}
+                      >
+                        {textOverlay}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Mockup nodes */}
+                  {nodes.map((node) => {
+                    const shiftedX = (node.position.x ?? 0) - previewData.minX + previewData.paddingLeft;
+                    const shiftedY = (node.position.y ?? 0) - previewData.minY + previewData.paddingTop;
+
+                    return (
+                      <div
+                        key={node.id}
+                        className="absolute"
+                        style={{
+                          left: `${shiftedX}px`,
+                          top: `${shiftedY}px`,
+                          width: `${node.width || 172}px`,
+                          height: `${node.height || 364}px`,
+                        }}
+                      >
+                        <StaticDeviceMockup node={node} shadowIntensity={shadowIntensity} />
+                      </div>
+                    );
+                  })}
+
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer Bar */}
+            <div className="p-6 border-t border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-4 bg-foreground/[0.01]">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span className="text-[10px] text-text-dim font-bold uppercase tracking-wider">
+                  Dimensions: {previewData.exportWidth}px × {previewData.exportHeight}px (3x density scaling on export)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPreviewModal(false)}
+                  className="px-5 py-2.5 rounded-full border border-border-medium hover:bg-foreground/[0.04] text-xs font-black text-foreground-pure transition-all select-none cursor-pointer active:scale-95"
+                >
+                  Close Preview
+                </button>
+                <button
+                  type="button"
+                  disabled={isExporting || (plan === "free" && userRole !== "admin" && usageCount >= 5)}
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    handleExport();
+                  }}
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white text-xs font-black shadow-lg shadow-indigo-500/10 active:scale-95 transition-all select-none cursor-pointer flex items-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Export Design Now
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -1335,8 +2126,23 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
               <button
                 type="button"
+                disabled={nodes.length === 0}
+                onClick={() => setShowPreviewModal(true)}
+                className={`w-full font-extrabold text-xs py-3 rounded-2xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/5 text-foreground-pure transition-all active:scale-[0.98] select-none flex items-center justify-center gap-2 cursor-pointer mb-2.5 ${
+                  nodes.length === 0 ? "opacity-40 cursor-not-allowed" : ""
+                }`}
+              >
+                <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Preview Mockup Design
+              </button>
+
+              <button
+                type="button"
                 disabled={nodes.length === 0 || isExporting || (plan === "free" && userRole !== "admin" && usageCount >= 5)}
-                onClick={handleExport}
+                onClick={() => handleExport()}
                 className={`w-full font-extrabold text-sm py-3.5 rounded-full shadow-lg transition-all flex items-center justify-center gap-2 select-none cursor-pointer ${
                   nodes.length === 0
                     ? "bg-foreground/5 text-text-muted border border-border-medium cursor-not-allowed"
@@ -1370,137 +2176,437 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           </div>
         </div>
 
-        {/* RIGHT PANEL — Multi-Screen Sandbox with Bounded React Flow (8 Cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-6 order-1 lg:order-2 sticky top-[100px]">
-          <div className="border border-border-medium bg-bg-card/45 backdrop-blur-sm rounded-3xl p-4 md:p-6 relative overflow-hidden flex flex-col gap-4">
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
-            
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-extrabold text-foreground-pure flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live Canvas
-              </span>
-              <span className="text-[10px] text-text-muted bg-foreground/[0.04] px-2.5 py-0.5 rounded-full border border-border-subtle font-mono">
-                Sized to Fit Assets
-              </span>
+        {/* RIGHT PANEL — Multi-Screen Canva Stacked Slides Sandbox (8 Cols) */}
+        <div className="lg:col-span-8 flex flex-col gap-8 order-1 lg:order-2">
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col text-left gap-1">
+              <h3 className="text-sm font-black tracking-[0.08em] text-foreground-pure uppercase flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 animate-pulse" />
+                Presentation Workspace Stack
+              </h3>
+              <p className="text-[11px] text-text-muted">
+                Manage multiple slides in your presentation. Drag screens inside the active focused board.
+              </p>
             </div>
 
-            {/* Scaled Responsive Canvas aspect-[16/9] */}
-            <div 
-              ref={containerRef}
-              className="w-full aspect-[16/9] rounded-2xl overflow-hidden transition-all duration-500 relative select-none border border-border-medium"
-              style={{ background: customBgColor || activeBg.style }}
-            >
-              {!mounted ? (
-                <div className="w-full h-full bg-[#030303] flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : (
-                <div 
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: 1200,
-                    height: 675,
-                    transform: `scale(${scale})`,
-                    transformOrigin: "top left"
-                  }}
-                >
-                  <ReactFlowProvider>
-                    <ReactFlow
-                      nodes={nodesWithZIndex}
-                      onNodesChange={(changes) => {
-                        onNodesChange(changes);
-                      }}
-                      nodeTypes={nodeTypes}
-                      fitView
-                      fitViewOptions={{ padding: 0 }}
-                      nodeExtent={[[0, 0], [1200 - 172, 675 - 364]]}
-                      panOnScroll={false}
-                      zoomOnScroll={false}
-                      zoomOnPinch={false}
-                      panOnDrag={false}
-                      preventScrolling={true}
-                      className="w-full h-full"
-                    >
-                      {/* Grid background layer */}
-                      {gridVisible && (
-                        <Background 
-                          variant={
-                            gridVariant === "dots" 
-                              ? BackgroundVariant.Dots 
-                              : gridVariant === "lines" 
-                              ? BackgroundVariant.Lines 
-                              : BackgroundVariant.Cross
-                          } 
-                          size={1.5} 
-                          gap={24}
-                          color="var(--grid-line)"
-                          style={{ opacity: 0.12 }}
-                        />
-                      )}
+            <div className="flex items-center gap-3">
+              {/* Quick Add Slide Header Button */}
+              <button
+                type="button"
+                onClick={handleAddBoard}
+                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 border border-indigo-400/20 text-white font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-lg shadow-indigo-500/10 active:scale-95 transition-all cursor-pointer select-none"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Slide</span>
+              </button>
 
-                      {/* Text Overlay inside sandbox */}
-                      {textOverlay && (
+              {boards.length > 1 && (
+                <button
+                  type="button"
+                  disabled={isBulkExporting}
+                  onClick={handleBulkExport}
+                  className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/35 hover:to-teal-500/35 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-300 font-extrabold text-[11px] uppercase tracking-wider transition-all hover:shadow-lg hover:shadow-emerald-500/10 active:scale-95 cursor-pointer disabled:opacity-50 select-none"
+                >
+                  {isBulkExporting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-emerald-300 border-t-transparent rounded-full animate-spin" />
+                      <span>Bulk Exporting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      <span>Bulk Export All ({boards.length})</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-8">
+            {boards.map((board, index) => {
+              const isActive = board.id === activeBoardId;
+              const isLight = board.selectedBg === "white" || board.selectedBg === "candy" || isLightColor(board.customBgColor);
+              const gridColor = isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)";
+              const bgStyle = board.customBgColor || BACKGROUND_PRESETS.find(bg => bg.id === board.selectedBg)?.style || BACKGROUND_PRESETS[0].style;
+
+              return (
+                <div 
+                  key={board.id}
+                  onClick={() => {
+                    if (!isActive) {
+                      setActiveBoardId(board.id);
+                      hydrateLocalStates(board);
+                    }
+                  }}
+                  className={`border bg-bg-card/45 backdrop-blur-sm rounded-3xl p-4 md:p-6 relative overflow-hidden flex flex-col gap-4 transition-all duration-300 ${
+                    isActive 
+                      ? "border-indigo-500/80 shadow-[0_0_40px_rgba(99,102,241,0.12)] ring-1 ring-indigo-500/30" 
+                      : "border-border-medium hover:border-border-strong hover:scale-[1.002] cursor-pointer"
+                  }`}
+                >
+                  {/* Card Header Top Border Highlight */}
+                  <div className={`absolute top-0 inset-x-0 h-[2px] transition-opacity duration-300 ${isActive ? "bg-gradient-to-r from-indigo-500 via-pink-500 to-indigo-500" : "bg-transparent"}`} />
+
+                  {/* Slide Management Top Bar Header */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-border-subtle/30">
+                    <div className="flex items-center gap-3">
+                      {/* Slide Number Tag */}
+                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-black text-xs">
+                        {index + 1}
+                      </div>
+
+                      {/* Editable Board Title Input */}
+                      <input
+                        type="text"
+                        value={board.title}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBoards((prev) => prev.map((b) => (b.id === board.id ? { ...b, title: val } : b)));
+                          if (isActive) setTitle(val);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="Name your board..."
+                        className="bg-transparent border-0 border-b border-transparent hover:border-border-medium focus:border-indigo-500 focus:ring-0 font-extrabold text-foreground-pure text-xs p-0 pb-0.5 rounded-none transition-all w-48 focus:outline-none"
+                      />
+
+                      {isActive && (
+                        <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full select-none">
+                          <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                          Editing
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Board Slide Action Toolbar */}
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      {/* Reordering Actions */}
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => handleMoveBoardUp(index)}
+                        className="p-1.5 rounded-lg bg-foreground/[0.02] border border-border-medium hover:bg-foreground/[0.06] text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                        title="Move Slide Up"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        disabled={index === boards.length - 1}
+                        onClick={() => handleMoveBoardDown(index)}
+                        className="p-1.5 rounded-lg bg-foreground/[0.02] border border-border-medium hover:bg-foreground/[0.06] text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                        title="Move Slide Down"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      <div className="w-px h-4 bg-border-medium mx-1" />
+
+                      {/* Duplicate Action */}
+                      <button
+                        type="button"
+                        onClick={() => handleDuplicateBoard(board)}
+                        className="p-1.5 rounded-lg bg-foreground/[0.02] border border-border-medium hover:bg-indigo-500/10 hover:border-indigo-500/20 hover:text-indigo-400 text-text-muted transition-all active:scale-95 cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                        title="Duplicate Slide"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                        </svg>
+                        <span className="hidden sm:inline">Duplicate</span>
+                      </button>
+
+                      {/* Delete Action */}
+                      <button
+                        type="button"
+                        disabled={boards.length <= 1}
+                        onClick={() => handleDeleteBoard(board.id)}
+                        className="p-1.5 rounded-lg bg-foreground/[0.02] border border-border-medium hover:bg-rose-500/10 hover:border-rose-500/20 hover:text-rose-400 text-text-muted transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                        title="Delete Slide"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span className="hidden sm:inline">Delete</span>
+                      </button>
+
+                      <div className="w-px h-4 bg-border-medium mx-1" />
+
+                      {/* Single Download Action */}
+                      <button
+                        type="button"
+                        disabled={board.nodes.length === 0 || isExporting}
+                        onClick={() => handleExport(board)}
+                        className={`p-1.5 rounded-lg border transition-all active:scale-95 cursor-pointer flex items-center gap-1 text-[10px] font-black ${
+                          board.nodes.length === 0
+                            ? "bg-foreground/5 text-text-muted border-border-medium cursor-not-allowed"
+                            : "bg-indigo-500/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white"
+                        }`}
+                        title="Download PNG for this slide"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span className="hidden sm:inline">Download</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Scaled Responsive Canvas aspect-[16/9] */}
+                  <div 
+                    ref={isActive ? containerRef : undefined}
+                    className={`w-full aspect-[16/9] rounded-2xl overflow-hidden transition-all duration-500 relative select-none border border-border-medium bg-black/10 ${!isActive ? "hover:shadow-md transition-shadow group" : ""}`}
+                    style={{ background: bgStyle }}
+                  >
+                    {isActive ? (
+                      // ACTIVE BOARD — Live Bounded React Flow Sandbox
+                      !mounted ? (
+                        <div className="w-full h-full bg-[#030303] flex items-center justify-center">
+                          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : (
                         <div 
-                          className="absolute left-0 right-0 flex justify-center pointer-events-none z-50 px-6"
                           style={{
-                            top: textPosition === "Top" ? 40 : "auto",
-                            bottom: textPosition === "Bottom" ? 40 : "auto",
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: 1200,
+                            height: 675,
+                            transform: `scale(${scale})`,
+                            transformOrigin: "top left"
                           }}
                         >
-                          <span 
-                            className="tracking-tight drop-shadow-md select-none text-center leading-none"
+                          <ReactFlowProvider>
+                            <ReactFlow
+                              nodes={nodesWithZIndex}
+                              onNodesChange={(changes) => {
+                                onNodesChange(changes);
+                              }}
+                              nodeTypes={nodeTypes}
+                              fitView
+                              fitViewOptions={{ padding: 0 }}
+                              nodeExtent={[[16, 16], [1200 - activeNodeWidth - 16, 675 - activeNodeHeight - 16]]}
+                              panOnScroll={false}
+                              zoomOnScroll={false}
+                              zoomOnPinch={false}
+                              panOnDrag={false}
+                              preventScrolling={true}
+                              className="w-full h-full"
+                            >
+                              {/* Grid background layer */}
+                              {gridVisible && (
+                                <Background 
+                                  variant={
+                                    gridVariant === "dots" 
+                                      ? BackgroundVariant.Dots 
+                                      : gridVariant === "lines" 
+                                      ? BackgroundVariant.Lines 
+                                      : BackgroundVariant.Cross
+                                  } 
+                                  size={1.5} 
+                                  gap={24}
+                                  color="var(--grid-line)"
+                                  style={{ opacity: 0.12 }}
+                                />
+                              )}
+
+                              {/* Text Overlay inside sandbox */}
+                              {textOverlay && (
+                                <div 
+                                  className="absolute left-0 right-0 flex justify-center pointer-events-none z-50 px-6"
+                                  style={{
+                                    top: textPosition === "Top" ? 40 : "auto",
+                                    bottom: textPosition === "Bottom" ? 40 : "auto",
+                                  }}
+                                >
+                                  <span 
+                                    className="tracking-tight drop-shadow-md select-none text-center leading-none"
+                                    style={{
+                                      fontSize: `${textFontSize}px`,
+                                      fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? 700 : 800,
+                                      color: textColor || (isBgLight ? "#000000" : "#ffffff"),
+                                    }}
+                                  >
+                                    {textOverlay}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Inset Safety Padding Presets Guidance Border */}
+                              <div 
+                                className="absolute rounded-xl border border-dashed border-white/5 pointer-events-none transition-all duration-300"
+                                style={{
+                                  inset: paddingLevel === "Compact" ? "20px" : paddingLevel === "Spacious" ? "80px" : "48px",
+                                  opacity: 0.5
+                                }}
+                              />
+                            </ReactFlow>
+                          </ReactFlowProvider>
+
+                          {/* Live Canvas Watermark for Free Plan users (exempting Admins) */}
+                          {plan === "free" && userRole !== "admin" && (
+                            <div 
+                              className="absolute bottom-6 right-6 z-[100] pointer-events-none select-none flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 shadow-2xl backdrop-blur-md animate-fade-in"
+                              style={{
+                                backgroundColor: "rgba(15, 23, 42, 0.45)",
+                              }}
+                            >
+                              <img 
+                                src="/logo.png" 
+                                alt="Muckly Logo" 
+                                className="w-5 h-5 rounded-md border border-white/10 shadow-md object-cover mr-2"
+                              />
+                              <span className="text-[10px] font-black tracking-[0.12em] text-white uppercase font-sans">
+                                Muckly
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    ) : (
+                      // INACTIVE BOARD — High Fidelity Static Canvas Render with identical visuals
+                      <div 
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: 1200,
+                          height: 675,
+                          transform: `scale(${scale})`,
+                          transformOrigin: "top left"
+                        }}
+                        className="w-full h-full relative"
+                      >
+                        {/* CSS Grid Layer */}
+                        {board.gridVisible && (
+                          <div 
+                            className="absolute inset-0 pointer-events-none opacity-[0.12]"
                             style={{
-                              fontSize: `${textFontSize}px`,
-                              fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? 700 : 800,
-                              color: textColor || (isBgLight ? "#000000" : "#ffffff"),
+                              backgroundImage: board.gridVariant === "dots" 
+                                ? `radial-gradient(${gridColor} 1.5px, transparent 1.5px)` 
+                                : `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`,
+                              backgroundSize: "24px 24px"
+                            }}
+                          />
+                        )}
+
+                        {/* Text Overlay Layer */}
+                        {board.textOverlay && (
+                          <div 
+                            className="absolute left-0 right-0 flex justify-center pointer-events-none z-50 px-6"
+                            style={{
+                              top: board.textPosition === "Top" ? 40 : "auto",
+                              bottom: board.textPosition === "Bottom" ? 40 : "auto",
                             }}
                           >
-                            {textOverlay}
-                          </span>
+                            <span 
+                              className="tracking-tight drop-shadow-md select-none text-center leading-none"
+                              style={{
+                                fontSize: `${board.textFontSize}px`,
+                                fontWeight: board.textWeight === "normal" ? 400 : board.textWeight === "medium" ? 500 : board.textWeight === "bold" ? 700 : 800,
+                                color: board.textColor || (isLight ? "#000000" : "#ffffff"),
+                              }}
+                            >
+                              {board.textOverlay}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Inset safety boundary guide */}
+                        <div 
+                          className="absolute rounded-xl border border-dashed border-white/5 pointer-events-none transition-all duration-300"
+                          style={{
+                            inset: board.paddingLevel === "Compact" ? "20px" : board.paddingLevel === "Spacious" ? "80px" : "48px",
+                            opacity: 0.5
+                          }}
+                        />
+
+                        {/* Static Device Mockups Render Map */}
+                        {board.nodes.map((node) => (
+                          <div
+                            key={node.id}
+                            className="absolute pointer-events-none"
+                            style={{
+                              left: node.position?.x ?? 0,
+                              top: node.position?.y ?? 0,
+                            }}
+                          >
+                            <StaticDeviceMockup node={node} shadowIntensity={board.shadowIntensity} />
+                          </div>
+                        ))}
+
+                        {/* Live Canvas Watermark for Free Plan users (exempting Admins) */}
+                        {plan === "free" && userRole !== "admin" && (
+                          <div 
+                            className="absolute bottom-6 right-6 z-[100] pointer-events-none select-none flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 shadow-2xl backdrop-blur-md animate-fade-in"
+                            style={{
+                              backgroundColor: "rgba(15, 23, 42, 0.45)",
+                            }}
+                          >
+                            <img 
+                              src="/logo.png" 
+                              alt="Muckly Logo" 
+                              className="w-5 h-5 rounded-md border border-white/10 shadow-md object-cover mr-2"
+                            />
+                            <span className="text-[10px] font-black tracking-[0.12em] text-white uppercase font-sans">
+                              Muckly
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Hover Click overlay */}
+                        <div className="absolute inset-0 bg-black/0 hover:bg-black/40 flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 cursor-pointer pointer-events-auto">
+                          <div className="flex items-center gap-2 bg-[#090b11]/95 border border-indigo-500/30 shadow-2xl backdrop-blur-md px-5 py-3 rounded-2xl scale-95 group-hover:scale-100 transition-all select-none">
+                            <svg className="w-4 h-4 text-indigo-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            <span className="text-xs font-extrabold text-foreground-pure uppercase tracking-wider">
+                              Click slide board to edit
+                            </span>
+                          </div>
                         </div>
-                      )}
-
-                      {/* Inset Safety Padding Presets Guidance Border */}
-                      <div 
-                        className="absolute rounded-xl border border-dashed border-white/5 pointer-events-none transition-all duration-300"
-                        style={{
-                          inset: paddingLevel === "Compact" ? "20px" : paddingLevel === "Spacious" ? "80px" : "48px",
-                          opacity: 0.5
-                        }}
-                      />
-                    </ReactFlow>
-                  </ReactFlowProvider>
-
-                  {/* Live Canvas Watermark for Free Plan users (exempting Admins) */}
-                  {plan === "free" && userRole !== "admin" && (
-                    <div 
-                      className="absolute bottom-6 right-6 z-[100] pointer-events-none select-none flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 shadow-2xl backdrop-blur-md animate-fade-in"
-                      style={{
-                        backgroundColor: "rgba(15, 23, 42, 0.45)",
-                      }}
-                    >
-                      <img 
-                        src="/logo.png" 
-                        alt="Muckly Logo" 
-                        className="w-5 h-5 rounded-md border border-white/10 shadow-md object-cover mr-2"
-                      />
-                      <span className="text-[10px] font-black tracking-[0.12em] text-white uppercase font-sans">
-                        Muckly
+                      </div>
+                    )}
+                  </div>
+                  
+                  {isActive && (
+                    <div className="flex items-center gap-1.5 justify-center border border-border-subtle bg-foreground/[0.01] rounded-2xl px-4 py-2">
+                      <span className="text-[10px] text-text-dim leading-none text-center">
+                        👉 Click a screen to select & configure bezel finish or presentation tilt details. Drag mockups to arrange them freely on the active canvas!
                       </span>
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-1.5 justify-center border border-border-subtle bg-foreground/[0.01] rounded-2xl px-4 py-2">
-              <span className="text-[10px] text-text-dim leading-none text-center">
-                👉 Click a screen to select & configure bezel finish or presentation tilt details. Drag mockups to arrange them freely on the canvas!
-              </span>
-            </div>
+              );
+            })}
+
+            {/* Add Board Slide Trigger */}
+            <button
+              type="button"
+              onClick={handleAddBoard}
+              className="border-2 border-dashed border-indigo-500/30 hover:border-indigo-500/60 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all rounded-3xl p-8 flex flex-col items-center justify-center gap-3 group cursor-pointer text-center"
+            >
+              <div className="w-12 h-12 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-lg shadow-indigo-500/5">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <h4 className="text-xs font-black text-foreground-pure transition-colors group-hover:text-indigo-400 uppercase tracking-widest">
+                + Add New Board Slide Page
+              </h4>
+              <p className="text-[10px] text-text-muted leading-normal max-w-sm">
+                Insert a clean, separate Canva slide board stacked below to upload and arrange more screenshots.
+              </p>
+            </button>
           </div>
         </div>
 
@@ -1551,21 +2657,32 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                       {m.deviceFrame || "Multi-screen"} • {m.tilt || "Custom Layout"}
                     </span>
                   </div>
-                  
-                  {m.mockupUrl && (
+                  <div className="flex items-center gap-1.5">
+                    {m.mockupUrl && (
+                      <button
+                        onClick={() => handleDirectDownload(
+                          m.mockupUrl!,
+                          `${m.title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`
+                        )}
+                        className="p-2 rounded-xl bg-foreground/[0.03] border border-border-medium hover:bg-indigo-500/10 hover:border-indigo-500/20 hover:text-indigo-400 text-foreground-pure transition-all active:scale-95 flex items-center justify-center select-none cursor-pointer"
+                        title="Download to computer"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                      </button>
+                    )}
+                    
                     <button
-                      onClick={() => handleDirectDownload(
-                        m.mockupUrl!,
-                        `${m.title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`
-                      )}
-                      className="p-2 rounded-xl bg-foreground/[0.03] border border-border-medium hover:bg-indigo-500/10 hover:border-indigo-500/20 hover:text-indigo-400 text-foreground-pure transition-all active:scale-95 flex items-center justify-center select-none cursor-pointer"
-                      title="Download to computer"
+                      onClick={() => handleDeleteMockup(m.id)}
+                      className="p-2 rounded-xl bg-foreground/[0.03] border border-border-medium hover:bg-rose-500/10 hover:border-rose-500/20 hover:text-rose-400 text-foreground-pure transition-all active:scale-95 flex items-center justify-center select-none cursor-pointer"
+                      title="Delete mockup"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
-                  )}
+                  </div>
                 </div>
 
               </div>

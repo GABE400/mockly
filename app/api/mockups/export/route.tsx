@@ -201,8 +201,8 @@ export async function POST(request: NextRequest) {
     for (const node of fetchedNodes) {
       const x = node.x ?? 0;
       const y = node.y ?? 0;
-      const w = 172; // Standard device width in pixels
-      const h = 364; // Standard device height in pixels
+      const w = node.width ?? 172; // Custom resized device width
+      const h = node.height ?? 364; // Custom resized device height
 
       if (x < minX) minX = x;
       if (x + w > maxX) maxX = x + w;
@@ -235,6 +235,17 @@ export async function POST(request: NextRequest) {
 
     const isBgLight = background === "white" || background === "candy" || isLightColor(customBgColor);
 
+    console.log("[Export Server Debug] exportWidth:", exportWidth, "exportHeight:", exportHeight);
+    console.log("[Export Server Debug] fetchedNodes count:", fetchedNodes.length);
+    console.log("[Export Server Debug] background:", background, "bgStyleValue:", bgStyleValue?.substring(0, 60));
+    console.log("[Export Server Debug] First node:", JSON.stringify({
+      x: fetchedNodes[0]?.x,
+      y: fetchedNodes[0]?.y,
+      screenshotUrl: fetchedNodes[0]?.screenshotUrl?.substring(0, 60),
+      deviceFrame: fetchedNodes[0]?.deviceFrame,
+      hasBase64: !!fetchedNodes[0]?.base64,
+    }));
+
     // 6. Compile SVG string utilizing Satori
     const svg = await satori(
       <div
@@ -252,11 +263,13 @@ export async function POST(request: NextRequest) {
         <div
           style={{
             position: "absolute",
-            inset: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             display: "flex",
             flexWrap: "wrap",
             opacity: 0.08,
-            pointerEvents: "none",
           }}
         >
           {Array.from({ length: Math.ceil((exportWidth * exportHeight) / 6400) }).map((_, i) => (
@@ -290,7 +303,7 @@ export async function POST(request: NextRequest) {
             <span
               style={{
                 fontSize: textFontSize ? `${textFontSize}px` : "32px",
-                fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? "bold" : "extrabold",
+                fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? 700 : 800,
                 color: textColor || (isBgLight ? "#000000" : "#ffffff"),
                 textShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
                 letterSpacing: "-0.5px",
@@ -507,8 +520,8 @@ export async function POST(request: NextRequest) {
                   position: "absolute",
                   left: `${shiftedX}px`,
                   top: `${shiftedY}px`,
-                  width: "172px",
-                  height: "364px",
+                  width: `${node.width ?? 172}px`,
+                  height: `${node.height ?? 364}px`,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -643,7 +656,10 @@ export async function POST(request: NextRequest) {
                       <div
                         style={{
                           position: "absolute",
-                          inset: 0,
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
                           background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 65%)",
                           zIndex: 20,
                           opacity: 0.85,
@@ -701,8 +717,8 @@ export async function POST(request: NextRequest) {
         )}
       </div>,
       {
-        width: 1200,
-        height: 675,
+        width: exportWidth,
+        height: exportHeight,
         fonts: [
           {
             name: "Inter",
@@ -754,6 +770,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error in mockup /api/mockups/export:", error);
+    console.error("Stack trace:", error?.stack);
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
       { status: 500 }
