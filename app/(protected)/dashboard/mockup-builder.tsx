@@ -364,6 +364,35 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     }, 4000);
   };
 
+  // Helper to trigger direct browser file download for cross-origin URLs
+  const handleDirectDownload = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Network response was not ok");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 150);
+    } catch (err) {
+      console.error("Direct download failed, falling back to open in tab:", err);
+      // Fallback: Open in new tab
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (toastTimeoutRef.current) {
@@ -650,12 +679,10 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
       setUsageCount(usageCount + 1);
       showToast("Premium PNG generated successfully!", "success");
 
-      const link = document.createElement("a");
-      link.href = data.mockup.mockupUrl;
-      link.download = `${title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await handleDirectDownload(
+        data.mockup.mockupUrl,
+        `${title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`
+      );
 
     } catch (err: any) {
       console.error(err);
@@ -1470,15 +1497,18 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                   </div>
                   
                   {m.mockupUrl && (
-                    <a
-                      href={m.mockupUrl}
-                      download={`${m.title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`}
+                    <button
+                      onClick={() => handleDirectDownload(
+                        m.mockupUrl!,
+                        `${m.title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`
+                      )}
                       className="p-2 rounded-xl bg-foreground/[0.03] border border-border-medium hover:bg-indigo-500/10 hover:border-indigo-500/20 hover:text-indigo-400 text-foreground-pure transition-all active:scale-95 flex items-center justify-center select-none cursor-pointer"
+                      title="Download to computer"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                    </a>
+                    </button>
                   )}
                 </div>
 
