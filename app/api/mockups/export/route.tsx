@@ -189,21 +189,59 @@ export async function POST(request: NextRequest) {
       BACKEND_BG_STYLES.sunset;
 
     let paddingValue = 48; // Default Standard
-    if (paddingLevel === "Compact") paddingValue = 20;
+    if (paddingLevel === "Compact") paddingValue = 24;
     else if (paddingLevel === "Spacious") paddingValue = 80;
 
-    const scaleFactor = (1200 - 2 * paddingValue) / 1200;
+    // Calculate dynamic bounding box of all active mockup nodes
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const node of fetchedNodes) {
+      const x = node.x ?? 0;
+      const y = node.y ?? 0;
+      const w = 172; // Standard device width in pixels
+      const h = 364; // Standard device height in pixels
+
+      if (x < minX) minX = x;
+      if (x + w > maxX) maxX = x + w;
+      if (y < minY) minY = y;
+      if (y + h > maxY) maxY = y + h;
+    }
+
+    // Fallback if no nodes present
+    if (minX === Infinity) minX = 0;
+    if (maxX === -Infinity) maxX = 1200;
+    if (minY === Infinity) minY = 0;
+    if (maxY === -Infinity) maxY = 675;
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+
+    // Account for text overlay space requirements
+    let textSpace = 0;
+    if (textOverlay) {
+      textSpace = (textFontSize || 32) * 1.5 + 24;
+    }
+
+    const paddingTop = paddingValue + (textOverlay && textPosition === "Top" ? textSpace : 0);
+    const paddingBottom = paddingValue + (textOverlay && textPosition === "Bottom" ? textSpace : 0);
+    const paddingLeft = paddingValue;
+    const paddingRight = paddingValue;
+
+    const exportWidth = Math.round(contentWidth + paddingLeft + paddingRight);
+    const exportHeight = Math.round(contentHeight + paddingTop + paddingBottom);
+
     const isBgLight = background === "white" || background === "candy" || isLightColor(customBgColor);
 
     // 6. Compile SVG string utilizing Satori
     const svg = await satori(
       <div
         style={{
-          width: "1200px",
-          height: "675px",
+          width: `${exportWidth}px`,
+          height: `${exportHeight}px`,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
           background: bgStyleValue,
           fontFamily: "Inter",
           position: "relative",
@@ -221,7 +259,7 @@ export async function POST(request: NextRequest) {
             pointerEvents: "none",
           }}
         >
-          {Array.from({ length: 120 }).map((_, i) => (
+          {Array.from({ length: Math.ceil((exportWidth * exportHeight) / 6400) }).map((_, i) => (
             <div
               key={i}
               style={{
@@ -234,52 +272,42 @@ export async function POST(request: NextRequest) {
           ))}
         </div>
 
-        {/* Scaled Content Container to apply paddingLevel visually */}
-        <div
-          style={{
-            position: "absolute",
-            left: `${paddingValue}px`,
-            top: `${paddingValue}px`,
-            width: "1200px",
-            height: "675px",
-            display: "flex",
-            transform: `scale(${scaleFactor})`,
-            transformOrigin: "top left",
-          }}
-        >
-          {/* Global Typography Headline Overlay */}
-          {textOverlay && (
-            <div
+        {/* Global Typography Headline Overlay */}
+        {textOverlay && (
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: textPosition === "Top" ? `${paddingValue}px` : "auto",
+              bottom: textPosition === "Bottom" ? `${paddingValue}px` : "auto",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 40,
+            }}
+          >
+            <span
               style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: textPosition === "Top" ? "40px" : "auto",
-                bottom: textPosition === "Bottom" ? "40px" : "auto",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                zIndex: 40,
+                fontSize: textFontSize ? `${textFontSize}px` : "32px",
+                fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? "bold" : "extrabold",
+                color: textColor || (isBgLight ? "#000000" : "#ffffff"),
+                textShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+                letterSpacing: "-0.5px",
               }}
             >
-              <span
-                style={{
-                  fontSize: textFontSize ? `${textFontSize}px` : "32px",
-                  fontWeight: textWeight === "normal" ? 400 : textWeight === "medium" ? 500 : textWeight === "bold" ? "bold" : "extrabold",
-                  color: textColor || (isBgLight ? "#000000" : "#ffffff"),
-                  textShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
-                  letterSpacing: "-0.5px",
-                }}
-              >
-                {textOverlay}
-              </span>
-            </div>
-          )}
+              {textOverlay}
+            </span>
+          </div>
+        )}
 
-          {/* Render each absolute coordinate mockup node (sorted so that the active/selected node is drawn on top) */}
-          {fetchedNodes
-            .sort((a: any, b: any) => (a.selected ? 1 : 0) - (b.selected ? 1 : 0))
-            .map((node: any) => {
+        {/* Render each absolute coordinate mockup node (sorted so that the active/selected node is drawn on top) */}
+        {fetchedNodes
+          .sort((a: any, b: any) => (a.selected ? 1 : 0) - (b.selected ? 1 : 0))
+          .map((node: any) => {
+            const shiftedX = (node.x ?? 0) - minX + paddingLeft;
+            const shiftedY = (node.y ?? 0) - minY + paddingTop;
+
             let bezelBorderColor = "#1e2029"; // Dark finish
             if (node.frameColor === "Light") bezelBorderColor = "#cbd5e1";
             else if (node.frameColor === "Gold") bezelBorderColor = "#b5942b";
@@ -296,11 +324,11 @@ export async function POST(request: NextRequest) {
               satoriTransform = "translateY(-20px) scale(0.88)";
             }
 
-            // Global drop shadow settings
-            let shadowStyle = "0 20px 30px rgba(0, 0, 0, 0.35)";
+            // Global drop shadow settings (Satori-compatible box-shadow properties)
+            let shadowStyle = "0px 20px 30px rgba(0, 0, 0, 0.35)";
             if (shadowIntensity === "None") shadowStyle = "none";
-            else if (shadowIntensity === "Soft") shadowStyle = "0 15px 35px -8px rgba(0, 0, 0, 0.35)";
-            else if (shadowIntensity === "Dramatic") shadowStyle = "0 35px 70px -15px rgba(0, 0, 0, 0.65), 0 15px 30px -10px rgba(0, 0, 0, 0.45)";
+            else if (shadowIntensity === "Soft") shadowStyle = "0px 15px 35px rgba(0, 0, 0, 0.25)";
+            else if (shadowIntensity === "Dramatic") shadowStyle = "0px 30px 60px rgba(0, 0, 0, 0.55)";
 
             const renderDeviceFeature = () => {
               if (
@@ -404,8 +432,8 @@ export async function POST(request: NextRequest) {
                 key={node.id}
                 style={{
                   position: "absolute",
-                  left: `${node.x}px`,
-                  top: `${node.y}px`,
+                  left: `${shiftedX}px`,
+                  top: `${shiftedY}px`,
                   width: "172px",
                   height: "364px",
                   display: "flex",
@@ -413,7 +441,6 @@ export async function POST(request: NextRequest) {
                   alignItems: "center",
                   justifyContent: "center",
                   transform: satoriTransform,
-                  boxShadow: shadowStyle,
                   borderRadius: "38px",
                   zIndex: 10,
                 }}
@@ -430,6 +457,7 @@ export async function POST(request: NextRequest) {
                     flexDirection: "column",
                     overflow: "hidden",
                     position: "relative",
+                    boxShadow: shadowStyle,
                   }}
                 >
                   {/* Physical side buttons */}
@@ -511,7 +539,6 @@ export async function POST(request: NextRequest) {
               </div>
             );
           })}
-        </div>
         
         {/* Server Side Watermark for Free Plan users (exempting Admins) */}
         {user.plan === "free" && user.role !== "admin" && (

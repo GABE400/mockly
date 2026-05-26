@@ -1267,7 +1267,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                 {isExporting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Generating 1200x675 PNG...
+                    Generating Dynamic PNG...
                   </>
                 ) : plan === "free" && userRole !== "admin" && usageCount >= 5 ? (
                   "Limit Reached — Upgrade to Export"
@@ -1298,7 +1298,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                 Live Canvas
               </span>
               <span className="text-[10px] text-text-muted bg-foreground/[0.04] px-2.5 py-0.5 rounded-full border border-border-subtle font-mono">
-                Ratio: 1200x675
+                Sized to Fit Assets
               </span>
             </div>
 
