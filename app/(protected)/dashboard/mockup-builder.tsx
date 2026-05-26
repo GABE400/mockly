@@ -853,6 +853,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   const [mockupsList, setMockupsList] = useState<MockupRecord[]>(initialMockups);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isFittingAspect, setIsFittingAspect] = useState(false);
 
   const maxScreens = plan === "free" ? 3 : 7;
 
@@ -1069,6 +1070,25 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           reader.onerror = (e) => reject(e);
         });
 
+        // Detect screenshot dimensions to match aspect ratio
+        let calculatedWidth = 172;
+        let calculatedHeight = 364; // Default fallback if measurement fails
+
+        try {
+          const img = new Image();
+          img.src = base64Data;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+          if (img.width && img.height) {
+            const aspect = img.width / img.height;
+            calculatedHeight = Math.round(calculatedWidth / aspect);
+          }
+        } catch (e) {
+          console.error("Failed to pre-calculate image aspect ratio:", e);
+        }
+
         const res = await fetch("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1093,8 +1113,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
             x: xPos,
             y: yPos,
           },
-          width: 172,
-          height: 364,
+          width: calculatedWidth,
+          height: calculatedHeight,
           data: {
             screenshotUrl: data.url,
             deviceFrame: DEVICE_FRAMES[0].id,
@@ -1148,6 +1168,41 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         return node;
       })
     );
+  };
+
+  const fitSelectedNodeToAspectRatio = async () => {
+    if (!selectedNode || !selectedNode.data?.screenshotUrl) return;
+    setIsFittingAspect(true);
+    try {
+      const img = new Image();
+      img.src = (selectedNode.data as any)?.screenshotUrl || "";
+      await new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+      });
+
+      if (img.width && img.height) {
+        const aspect = img.width / img.height;
+        const currentWidth = selectedNode.width || 172;
+        const newHeight = Math.round(currentWidth / aspect);
+
+        setNodes((nds) =>
+          nds.map((n) =>
+            n.id === selectedNode.id
+              ? { ...n, height: newHeight }
+              : n
+          )
+        );
+        showToast("Mockup frame fitted to screenshot aspect ratio!", "success");
+      } else {
+        showToast("Unable to detect screenshot dimensions.", "error");
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("Error fitting mockup to screenshot aspect ratio.", "error");
+    } finally {
+      setIsFittingAspect(false);
+    }
   };
 
   // Interactive sandbox dynamic scale scaling hook
@@ -1404,7 +1459,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
             {/* Preview Viewport Canvas */}
             <div 
               ref={previewContainerRef}
-              className={`flex-1 p-8 bg-[#030407]/45 flex items-center justify-center min-h-[350px] max-h-[60vh] relative ${
+              className={`flex-1 p-8 bg-[#030407]/45 flex items-center justify-center min-h-0 relative ${
                 zoomMode === "fit" ? "overflow-hidden" : "overflow-auto"
               }`}
             >
@@ -1828,6 +1883,30 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                           ))}
                         </div>
                       </div>
+
+                      {/* Dynamic aspect ratio auto-fitting button */}
+                      {!!(selectedNode.data as any)?.screenshotUrl && (
+                        <button
+                          type="button"
+                          onClick={fitSelectedNodeToAspectRatio}
+                          disabled={isFittingAspect}
+                          className="w-full bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/20 hover:border-indigo-500/30 text-indigo-400 text-[10px] font-extrabold py-2.5 rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-1.5 active:scale-98 select-none"
+                        >
+                          {isFittingAspect ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                              Measuring & Fitting bezel...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                              </svg>
+                              Auto-Fit Bezel Aspect Ratio
+                            </>
+                          )}
+                        </button>
+                      )}
 
                       {/* Delete button in inspector */}
                       <button
