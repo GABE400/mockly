@@ -1146,6 +1146,133 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     }
   };
 
+  const processImageUploadsForBoard = async (filesList: FileList | File[], targetBoardId: string) => {
+    const filesArray = Array.from(filesList).filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        showToast(`Skipped "${file.name}": Please upload a valid image file (PNG, JPG, WebP).`, "error");
+        return false;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        showToast(`Skipped "${file.name}": File size exceeds 8MB limit.`, "error");
+        return false;
+      }
+      return true;
+    });
+
+    if (filesArray.length === 0) return;
+
+    const targetBoard = boards.find((b) => b.id === targetBoardId);
+    if (!targetBoard) return;
+
+    const currentCount = targetBoard.nodes?.length || 0;
+    const availableSlots = maxScreens - currentCount;
+
+    if (availableSlots <= 0) {
+      showToast(`Limit reached: You can upload up to ${maxScreens} screens on your ${plan} plan.`, "error");
+      if (plan === "free") setShowLimitModal(true);
+      return;
+    }
+
+    const filesToUpload = filesArray.slice(0, availableSlots);
+    setIsUploading(true);
+
+    try {
+      const uploadPromises = filesToUpload.map(async (file, i) => {
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = (e) => reject(e);
+        });
+
+        // Detect screenshot dimensions to match aspect ratio
+        let calculatedWidth = 172;
+        let calculatedHeight = 364; // Default fallback if measurement fails
+
+        try {
+          const img = new Image();
+          img.src = base64Data;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+          if (img.width && img.height) {
+            const aspect = img.width / img.height;
+            calculatedHeight = Math.round(calculatedWidth / aspect);
+          }
+        } catch (e) {
+          console.error("Failed to pre-calculate image aspect ratio:", e);
+        }
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file: base64Data,
+            fileName: file.name,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Failed to upload "${file.name}".`);
+
+        const nodeIndex = currentCount + i;
+        const xPos = 200 + (nodeIndex * 220) % (1200 - 172 - 100); 
+        const yPos = 120 + Math.floor((nodeIndex * 220) / (1200 - 172 - 100)) * 60;
+
+        const spawnedNode: Node = {
+          id: `node-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 7)}`,
+          type: "deviceMockup",
+          position: {
+            x: xPos,
+            y: yPos,
+          },
+          width: calculatedWidth,
+          height: calculatedHeight,
+          data: {
+            screenshotUrl: data.url,
+            deviceFrame: DEVICE_FRAMES[0].id,
+            frameColor: FRAME_COLORS[0].id,
+            tilt: ANGLES[0].id,
+          },
+          selected: i === filesToUpload.length - 1, // Select the last spawned node
+        };
+        return spawnedNode;
+      });
+
+      const spawnedNodes = await Promise.all(uploadPromises);
+
+      // Add to boards array
+      setBoards((prev) =>
+        prev.map((b) => {
+          if (b.id === targetBoardId) {
+            const updatedExisting = (b.nodes || []).map((n) => ({ ...n, selected: false }));
+            return {
+              ...b,
+              nodes: [...updatedExisting, ...spawnedNodes] as Node[],
+            };
+          }
+          return b;
+        })
+      );
+
+      // Hydrate & activate target board immediately
+      setActiveBoardId(targetBoardId);
+      const updatedTargetBoard = {
+        ...targetBoard,
+        nodes: [...(targetBoard.nodes || []).map((n) => ({ ...n, selected: false })), ...spawnedNodes] as Node[],
+      };
+      hydrateLocalStates(updatedTargetBoard);
+
+      showToast(`Added ${filesToUpload.length} screen(s) to "${targetBoard.title}"!`, "success");
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || "An unexpected error occurred during upload.", "error");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const deleteNode = (id: string) => {
     setNodes((nds) => nds.filter((n) => n.id !== id));
     showToast("Screen removed from workspace.", "success");
@@ -1767,22 +1894,35 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                         {nodes.map((node, i) => (
                           <div 
                             key={node.id} 
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("text/plain", JSON.stringify({
+                                type: "moveMockup",
+                                nodeId: node.id,
+                                sourceBoardId: activeBoardId
+                              }));
+                            }}
                             onClick={() => {
                               // Highlight node
                               setNodes((nds) => nds.map((n) => ({ ...n, selected: n.id === node.id })));
                               setOpenSections((prev) => ({ ...prev, inspector: true }));
                             }}
-                            className={`flex items-center justify-between p-2 rounded-xl border text-xs cursor-pointer select-none transition-all ${
+                            className={`flex items-center justify-between p-2 rounded-xl border text-xs cursor-grab active:cursor-grabbing select-none transition-all ${
                               node.selected 
                                 ? "bg-indigo-500/10 border-indigo-500/30 text-foreground-pure" 
                                 : "bg-foreground/[0.01] border-border-medium hover:bg-foreground/[0.02]"
                             }`}
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="w-4 h-4 rounded bg-black/20 flex items-center justify-center overflow-hidden border border-border-medium">
+                            <div className="flex items-center gap-2 max-w-[85%]">
+                              {/* Grab handle dots icon */}
+                              <svg className="w-3.5 h-3.5 text-text-dim/50 cursor-grab flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                              </svg>
+
+                              <span className="w-4 h-4 rounded bg-black/20 flex items-center justify-center overflow-hidden border border-border-medium flex-shrink-0">
                                 <img src={node.data.screenshotUrl as string} className="object-cover h-full w-full" />
                               </span>
-                              <span className="font-semibold text-[10px] truncate max-w-[130px]">
+                              <span className="font-semibold text-[10px] truncate">
                                 Screen {i + 1} ({String(node.data.deviceFrame || "")})
                               </span>
                             </div>
@@ -2340,6 +2480,75 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                       hydrateLocalStates(board);
                     }
                   }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                  }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    try {
+                      const rawData = e.dataTransfer.getData("text/plain");
+                      if (rawData) {
+                        const parsed = JSON.parse(rawData);
+                        if (parsed.type === "moveMockup") {
+                          const { nodeId, sourceBoardId } = parsed;
+                          const destinationBoardId = board.id;
+                          
+                          if (sourceBoardId === destinationBoardId) return;
+                          
+                          const sourceBoard = boards.find(b => b.id === sourceBoardId);
+                          if (!sourceBoard) return;
+                          
+                          const targetNode = sourceBoard.nodes.find(n => n.id === nodeId);
+                          if (!targetNode) return;
+                          
+                          const destBoard = boards.find(b => b.id === destinationBoardId);
+                          if (destBoard && destBoard.nodes.length >= maxScreens) {
+                            showToast(`Destination board has reached the maximum of ${maxScreens} screens!`, "error");
+                            return;
+                          }
+                          
+                          setBoards(prev => prev.map(b => {
+                            if (b.id === sourceBoardId) {
+                              return {
+                                ...b,
+                                nodes: b.nodes.filter(n => n.id !== nodeId)
+                              };
+                            }
+                            if (b.id === destinationBoardId) {
+                              return {
+                                ...b,
+                                nodes: [...b.nodes, { ...targetNode, selected: true }]
+                              };
+                            }
+                            return b;
+                          }));
+                          
+                          if (isActive) {
+                            setNodes(prev => prev.filter(n => n.id !== nodeId));
+                          }
+                          
+                          setActiveBoardId(destinationBoardId);
+                          const updatedDestBoard = {
+                            ...destBoard,
+                            nodes: [...(destBoard?.nodes || []).map(n => ({...n, selected: false})), { ...targetNode, selected: true }]
+                          } as Board;
+                          hydrateLocalStates(updatedDestBoard);
+                          
+                          showToast(`Moved screen to "${board.title}"!`, "success");
+                          return;
+                        }
+                      }
+                    } catch (err) {
+                      console.error("Error handling mockup drop:", err);
+                    }
+                    
+                    const files = e.dataTransfer.files;
+                    if (files && files.length > 0) {
+                      await processImageUploadsForBoard(files, board.id);
+                    }
+                  }}
                   className={`border bg-bg-card/45 backdrop-blur-sm rounded-3xl p-4 md:p-6 relative overflow-hidden flex flex-col gap-4 transition-all duration-300 ${
                     isActive 
                       ? "border-indigo-500/80 shadow-[0_0_40px_rgba(99,102,241,0.12)] ring-1 ring-indigo-500/30" 
@@ -2481,6 +2690,26 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                             transformOrigin: "top left"
                           }}
                         >
+                          {nodes.length === 0 && (
+                            <div 
+                              onClick={() => fileInputRef.current?.click()}
+                              className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer bg-foreground/[0.01] hover:bg-foreground/[0.02] transition-colors p-8 z-[80]"
+                            >
+                              <div className="bg-[#090b11]/95 border border-indigo-500/20 rounded-[32px] p-8 flex flex-col items-center gap-4.5 shadow-2xl max-w-sm text-center select-none active:scale-[0.98] transition-transform backdrop-blur-md">
+                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                  </svg>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <h4 className="text-sm font-black text-foreground-pure uppercase tracking-widest">Add Mockup to this Slide</h4>
+                                  <p className="text-[10px] text-text-dim leading-relaxed max-w-[260px]">
+                                    Drag & drop any app screenshot directly onto this board, or click this card to browse files!
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           <ReactFlowProvider>
                             <ReactFlow
                               nodes={nodesWithZIndex}
@@ -2583,6 +2812,23 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                         }}
                         className="w-full h-full relative"
                       >
+                        {board.nodes.length === 0 && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 z-[40]">
+                            <div className="bg-[#090b11]/95 border border-border-medium rounded-[32px] p-6 flex flex-col items-center gap-3.5 shadow-2xl max-w-xs text-center select-none backdrop-blur-md">
+                              <div className="w-10 h-10 rounded-2xl bg-foreground/[0.03] border border-border-medium flex items-center justify-center text-text-dim">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                <h4 className="text-xs font-extrabold text-foreground-pure">Empty Slide Page</h4>
+                                <p className="text-[9px] text-text-dim leading-snug">
+                                  Click slide to activate and upload screenshots!
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         {/* CSS Grid Layer */}
                         {board.gridVisible && (
                           <div 
