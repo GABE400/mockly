@@ -496,6 +496,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   // Alignment Grid State
   const [gridVisible, setGridVisible] = useState<boolean>(true);
   const [gridVariant, setGridVariant] = useState<"dots" | "lines" | "cross">("dots");
+  const [snapToGrid, setSnapToGrid] = useState<boolean>(false);
 
   // React Flow Nodes
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -986,7 +987,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   const nodesWithZIndex = useMemo(() => {
     return nodes.map((node) => ({
       ...node,
-      zIndex: node.selected ? 10 : 1,
+      zIndex: (node.selected ? 1000 : 0) + (Number(node.data?.customZIndex) || 0),
       data: {
         ...node.data,
         shadowIntensity,
@@ -1297,6 +1298,56 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     );
   };
 
+  // Bring selected node to the absolute front of the stack
+  const bringToFront = () => {
+    if (!selectedNode) return;
+    const maxZ = nodes.reduce((max, node) => {
+      const z = Number(node.data?.customZIndex) || 0;
+      return z > max ? z : max;
+    }, 0);
+    
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === selectedNode.id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              customZIndex: maxZ + 1,
+            },
+          };
+        }
+        return node;
+      })
+    );
+    showToast("Brought selected mockup to front!", "success");
+  };
+
+  // Send selected node to the absolute back of the stack
+  const sendToBack = () => {
+    if (!selectedNode) return;
+    const minZ = nodes.reduce((min, node) => {
+      const z = Number(node.data?.customZIndex) || 0;
+      return z < min ? z : min;
+    }, 0);
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === selectedNode.id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              customZIndex: minZ - 1,
+            },
+          };
+        }
+        return node;
+      })
+    );
+    showToast("Sent selected mockup to back!", "success");
+  };
+
   const fitSelectedNodeToAspectRatio = async () => {
     if (!selectedNode || !selectedNode.data?.screenshotUrl) return;
     setIsFittingAspect(true);
@@ -1389,6 +1440,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         frameColor: (n as any).frameColor || n.data?.frameColor,
         tilt: (n as any).tilt || n.data?.tilt,
         selected: n.selected || false,
+        zIndex: (n as any).zIndex || (n.selected ? 1000 : 0) + (Number(n.data?.customZIndex) || 0),
       }));
 
       console.log("[Export Debug] Payload nodes count:", nodesPayload.length);
@@ -2024,6 +2076,33 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                         </div>
                       </div>
 
+                      {/* Depth Layer Stacking Controls */}
+                      <div className="flex flex-col gap-1.5 text-left mb-2">
+                        <label className="text-[10px] font-bold text-text-muted">Depth Ordering Layers</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={bringToFront}
+                            className="bg-foreground/[0.03] hover:bg-foreground/[0.06] border border-border-medium text-foreground-pure text-[10px] font-extrabold py-2 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5 select-none"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                            </svg>
+                            Bring Front
+                          </button>
+                          <button
+                            type="button"
+                            onClick={sendToBack}
+                            className="bg-foreground/[0.03] hover:bg-foreground/[0.06] border border-border-medium text-foreground-pure text-[10px] font-extrabold py-2 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5 select-none"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+                            </svg>
+                            Send Back
+                          </button>
+                        </div>
+                      </div>
+
                       {/* Dynamic aspect ratio auto-fitting button */}
                       {!!(selectedNode.data as any)?.screenshotUrl && (
                         <button
@@ -2223,6 +2302,23 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  {/* Grid snapping toggle */}
+                  <div className="flex flex-col gap-2 text-left border-t border-border-subtle pt-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-bold text-text-muted">Snap Mockups to Grid</label>
+                      <button
+                        onClick={() => setSnapToGrid(!snapToGrid)}
+                        className={`text-[9px] font-bold px-2 py-0.5 rounded-md border select-none cursor-pointer transition-all ${
+                          snapToGrid
+                            ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400"
+                            : "bg-foreground/[0.02] border-border-medium text-text-muted"
+                        }`}
+                      >
+                        {snapToGrid ? "Enabled" : "Disabled"}
+                      </button>
+                    </div>
                   </div>
 
                 </div>
@@ -2717,6 +2813,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                                 onNodesChange(changes);
                               }}
                               nodeTypes={nodeTypes}
+                              snapToGrid={snapToGrid}
+                              snapGrid={[12, 12]}
                               fitView={false}
                               defaultViewport={{ x: 0, y: 0, zoom: 1 }}
                               minZoom={1}

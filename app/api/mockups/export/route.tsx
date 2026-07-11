@@ -8,6 +8,8 @@ import { imagekit } from "@/lib/imagekit";
 import satori from "satori";
 import sharp from "sharp";
 import React from "react";
+import { promises as fs } from "fs";
+import path from "path";
 
 // Server Background Mapping matching the client exactly
 const BACKEND_BG_STYLES = {
@@ -130,12 +132,13 @@ export async function POST(request: NextRequest) {
       console.error("Failed to read logo.png for watermarking:", e);
     }
 
-    // 4. Batch fetch screenshot and font buffers concurrently
-    const fontPromise = fetch("https://cdn.jsdelivr.net/npm/@fontsource/inter/files/inter-latin-400-normal.woff")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load rendering font buffer.");
-        return res.arrayBuffer();
-      });
+    // 4. Read local font buffers and fetch screenshot images concurrently
+    const fontRegularPromise = fs.readFile(
+      path.join(process.cwd(), "public", "fonts", "inter-latin-400-normal.woff")
+    );
+    const fontBoldPromise = fs.readFile(
+      path.join(process.cwd(), "public", "fonts", "inter-latin-700-normal.woff")
+    );
 
     // Fetch and base64-encode all node images concurrently
     const nodesPromises = canvasNodes.map(async (node: any) => {
@@ -159,8 +162,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const [fontBuffer, fetchedNodes] = await Promise.all([
-      fontPromise,
+    const [fontRegularBuffer, fontBoldBuffer, fetchedNodes] = await Promise.all([
+      fontRegularPromise,
+      fontBoldPromise,
       Promise.all(nodesPromises),
     ]);
 
@@ -316,7 +320,12 @@ export async function POST(request: NextRequest) {
 
         {/* Render each absolute coordinate mockup node (sorted so that the active/selected node is drawn on top) */}
         {fetchedNodes
-          .sort((a: any, b: any) => (a.selected ? 1 : 0) - (b.selected ? 1 : 0))
+          .sort((a: any, b: any) => {
+            const zA = a.zIndex ?? 0;
+            const zB = b.zIndex ?? 0;
+            if (zA !== zB) return zA - zB;
+            return (a.selected ? 1 : 0) - (b.selected ? 1 : 0);
+          })
           .map((node: any) => {
             const shiftedX = (node.x ?? 0) - minX + paddingLeft;
             const shiftedY = (node.y ?? 0) - minY + paddingTop;
@@ -722,8 +731,14 @@ export async function POST(request: NextRequest) {
         fonts: [
           {
             name: "Inter",
-            data: fontBuffer,
+            data: fontRegularBuffer,
             weight: 400,
+            style: "normal",
+          },
+          {
+            name: "Inter",
+            data: fontBoldBuffer,
+            weight: 700,
             style: "normal",
           },
         ],
