@@ -12,6 +12,7 @@ interface UserProfile {
   role?: string | null;
   avatarUrl?: string | null;
   image?: string | null;
+  figmaToken?: string | null;
 }
 
 interface UserProfileBadgeProps {

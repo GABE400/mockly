@@ -846,6 +846,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [figmaUrlInput, setFigmaUrlInput] = useState("");
+  const [isSyncingFigma, setIsSyncingFigma] = useState(false);
 
   // Export & Quota States
   const [isExporting, setIsExporting] = useState(false);
@@ -856,7 +858,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isFittingAspect, setIsFittingAspect] = useState(false);
 
-  const maxScreens = plan === "pro" ? 7 : 3;
+  const maxScreens = (plan === "pro" || userRole === "admin") ? 7 : 3;
   const isLimitReached = userRole !== "admin" && (plan === "free" ? usageCount >= 5 : plan === "starter" ? usageCount >= 30 : false);
 
   // Dynamic Bounding Box calculation for rendering exact cropped preview inside the modal
@@ -1132,6 +1134,106 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handleSyncFigma = async () => {
+    if (!figmaUrlInput.trim()) return;
+
+    const currentCount = nodes.length;
+    if (currentCount >= maxScreens) {
+      showToast(`Limit reached: You can upload up to ${maxScreens} screens on your ${plan} plan.`, "error");
+      if (plan !== "pro") setShowLimitModal(true);
+      return;
+    }
+
+    setIsSyncingFigma(true);
+
+    try {
+      const res = await fetch("/api/figma/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ figmaUrl: figmaUrlInput.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to sync from Figma.");
+
+      const incomingScreens = data.screenshots || [];
+      if (incomingScreens.length === 0) {
+        throw new Error("No valid screens were returned by Figma.");
+      }
+
+      // Check if importing all screens would exceed the limit
+      let screensToImport = incomingScreens;
+      const spaceLeft = maxScreens - currentCount;
+      if (screensToImport.length > spaceLeft) {
+        screensToImport = screensToImport.slice(0, spaceLeft);
+        showToast(`Omitted ${incomingScreens.length - spaceLeft} screen(s) to stay within your plan limit of ${maxScreens} screens.`, "error");
+      }
+
+      const newNodesList: Node[] = [];
+
+      for (let idx = 0; idx < screensToImport.length; idx++) {
+        const screen = screensToImport[idx];
+        
+        // Detect dimensions for this specific screen
+        let calculatedWidth = 172;
+        let calculatedHeight = 364; // Default fallback
+
+        try {
+          const img = new Image();
+          img.src = screen.url;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+          if (img.width && img.height) {
+            const aspect = img.width / img.height;
+            calculatedHeight = Math.round(calculatedWidth / aspect);
+          }
+        } catch (e) {
+          console.error("Failed to pre-calculate image aspect ratio:", e);
+        }
+
+        const nodeIndex = currentCount + idx;
+        // Arrange side-by-side cleanly in horizontal row(s) with 260px gap offset
+        const xPos = 200 + (nodeIndex * 260) % (1200 - 172 - 100);
+        const yPos = 120 + Math.floor((nodeIndex * 260) / (1200 - 172 - 100)) * 420;
+
+        const spawnedNode: Node = {
+          id: `node-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
+          type: "deviceMockup",
+          position: {
+            x: xPos,
+            y: yPos,
+          },
+          width: calculatedWidth,
+          height: calculatedHeight,
+          data: {
+            screenshotUrl: screen.url,
+            deviceFrame: DEVICE_FRAMES[0].id,
+            frameColor: FRAME_COLORS[0].id,
+            tilt: ANGLES[0].id,
+          },
+          selected: idx === screensToImport.length - 1, // select the last imported one
+        };
+
+        newNodesList.push(spawnedNode);
+      }
+
+      setNodes((nds) => {
+        const updatedExisting = nds.map((n) => ({ ...n, selected: false }));
+        return [...updatedExisting, ...newNodesList] as Node[];
+      });
+
+      showToast(`Successfully synced ${newNodesList.length} screen(s) from Figma!`, "success");
+      setFigmaUrlInput(""); // Reset input
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || "An unexpected error occurred during Figma sync.", "error");
+    } finally {
+      setIsSyncingFigma(false);
     }
   };
 
@@ -1917,6 +2019,47 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                         <span className="text-[9px] text-text-dim">Drag image or browse (Max 8MB)</span>
                       </div>
                     )}
+                  </div>
+
+                  {/* Figma Link Sync Input */}
+                  <div className="border border-border-medium bg-bg-card/20 rounded-2xl p-4 flex flex-col gap-2.5 mt-1">
+                    <div className="flex items-center gap-1.5">
+                      {/* Figma Logo Accent Icon */}
+                      <svg className="w-3 shrink-0" viewBox="0 0 38 57" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ height: "12px" }}>
+                        <path d="M19 0C8.5 0 0 8.5 0 19C0 24.3 2.2 29.1 5.7 32.5C2.2 35.9 0 40.7 0 46C0 56.5 8.5 65 19 65C29.5 65 38 56.5 38 46C38 40.7 35.8 35.9 32.3 32.5C35.8 29.1 38 24.3 38 19C38 8.5 29.5 0 19 0Z" fill="#F24E1E" style={{ display: "none" }} />
+                        <path d="M9.5 28.5C4.25 28.5 0 24.25 0 19C0 13.75 4.25 9.5 9.5 9.5C14.75 9.5 19 13.75 19 19V28.5H9.5Z" fill="#F24E1E" />
+                        <path d="M9.5 47.5C4.25 47.5 0 43.25 0 38C0 32.75 4.25 28.5 9.5 28.5H19V38C19 43.25 14.75 47.5 9.5 47.5Z" fill="#A259FF" />
+                        <path d="M19 9.5C19 4.25 23.25 0 28.5 0C33.75 0 38 4.25 38 9.5C38 14.75 33.75 19 28.5 19H19V9.5Z" fill="#FF7262" />
+                        <path d="M19 19H28.5C33.75 19 38 23.25 38 28.5C38 33.75 33.75 38 28.5 38C23.25 38 19 33.75 19 28.5V19Z" fill="#1ABC9C" />
+                        <path d="M9.5 57C4.25 57 0 52.75 0 47.5C0 42.25 4.25 38 9.5 38C14.75 38 19 42.25 19 47.5C19 52.75 14.75 57 9.5 57Z" fill="#1982FC" />
+                      </svg>
+                      <span className="text-[10px] font-bold text-foreground-pure">Sync from Figma Frame</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Paste Figma selection link..."
+                        value={figmaUrlInput}
+                        onChange={(e) => setFigmaUrlInput(e.target.value)}
+                        disabled={isSyncingFigma}
+                        className="flex-1 bg-foreground/[0.03] border border-border-medium rounded-xl px-3 py-2 text-[10px] focus:outline-none focus:border-indigo-500/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSyncFigma}
+                        disabled={isSyncingFigma || !figmaUrlInput.trim()}
+                        className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-xl px-3 py-2 text-[10px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer select-none active:scale-[0.98]"
+                      >
+                        {isSyncingFigma ? (
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          "Sync"
+                        )}
+                      </button>
+                    </div>
+                    <span className="text-[8px] text-text-dim leading-normal">
+                      Select frame in Figma, right click ➔ <strong>Copy link to selection</strong>.
+                    </span>
                   </div>
 
                   {/* Active node lists list in accordion */}

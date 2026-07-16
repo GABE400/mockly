@@ -21,7 +21,15 @@ export default async function DashboardPage() {
     redirect("/sign-in");
   }
 
-  const { user } = session;
+  const dbUser = await db.query.users.findFirst({
+    where: (u, { eq }) => eq(u.id, session.user.id),
+  });
+
+  if (!dbUser) {
+    redirect("/sign-in");
+  }
+
+  const user = dbUser;
 
   // Direct Page-Level Redirection: Block dashboard access if onboarding is incomplete
   if (!user.onboardingComplete) {
@@ -134,7 +142,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-text-semi-muted">Account Tier:</span>
             <span className="text-xs font-black uppercase tracking-wider bg-gradient-to-r from-indigo-500 to-pink-500 text-white px-3.5 py-1 rounded-full shadow-lg shadow-indigo-500/15 select-none">
-              {user.plan === "pro" ? "Pro Plan" : user.plan === "starter" ? "Starter Plan" : "Free Plan"}
+              {user.role === "admin" ? "Admin (Free Pro Access)" : user.plan === "pro" ? "Pro Plan" : user.plan === "starter" ? "Starter Plan" : "Free Plan"}
             </span>
           </div>
         </section>

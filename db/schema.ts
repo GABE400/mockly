@@ -12,6 +12,7 @@ export const user = pgTable("user", {
   role: text("role").$type<"admin" | "user">().default("user").notNull(),
   onboardingAnswers: jsonb("onboarding_answers"),
   onboardingComplete: boolean("onboarding_complete").default(false).notNull(),
+  figmaToken: text("figma_token"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });

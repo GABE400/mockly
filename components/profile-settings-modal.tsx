@@ -13,6 +13,7 @@ interface UserProfile {
   role?: string | null;
   avatarUrl?: string | null;
   image?: string | null;
+  figmaToken?: string | null;
 }
 
 interface ProfileSettingsModalProps {
@@ -32,6 +33,8 @@ export function ProfileSettingsModal({ user: initialUser, isOpen, onClose }: Pro
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [closing, setClosing] = useState(false);
+  const [figmaToken, setFigmaToken] = useState(initialUser.figmaToken || "");
+  const [updatingFigmaToken, setUpdatingFigmaToken] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -40,6 +43,7 @@ export function ProfileSettingsModal({ user: initialUser, isOpen, onClose }: Pro
   useEffect(() => {
     setUser(initialUser);
     setName(initialUser.name);
+    setFigmaToken(initialUser.figmaToken || "");
     setAvatarPreview(initialUser.avatarUrl || initialUser.image || null);
   }, [initialUser]);
 
@@ -165,6 +169,32 @@ export function ProfileSettingsModal({ user: initialUser, isOpen, onClose }: Pro
     }
   };
 
+  const handleUpdateFigmaToken = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdatingFigmaToken(true);
+    setToast(null);
+
+    try {
+      const res = await fetch("/api/user/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ figmaToken: figmaToken.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update Figma token");
+
+      setUser((prev) => ({ ...prev, figmaToken: figmaToken.trim() }));
+      setToast({ type: "success", message: "Figma token updated!" });
+      router.refresh();
+    } catch (err: any) {
+      console.error(err);
+      setToast({ type: "error", message: err.message || "An error occurred." });
+    } finally {
+      setUpdatingFigmaToken(false);
+    }
+  };
+
   // 4. Handle Account Deletion
   const handleDeleteAccount = async () => {
     if (deleteConfirmation !== "DELETE") {
@@ -209,7 +239,7 @@ export function ProfileSettingsModal({ user: initialUser, isOpen, onClose }: Pro
     }
   };
 
-  const isPro = user.plan === "pro";
+  const isPro = user.plan === "pro" || user.role === "admin";
   const avatarSrc = avatarPreview || null;
   const initials = user.name ? user.name.substring(0, 2).toUpperCase() : "U";
 
@@ -350,6 +380,32 @@ export function ProfileSettingsModal({ user: initialUser, isOpen, onClose }: Pro
               </div>
             </form>
 
+            {/* Figma Token Edit */}
+            <form onSubmit={handleUpdateFigmaToken} className="mt-3.5">
+              <label className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
+                Figma Personal Access Token
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={figmaToken}
+                  onChange={(e) => setFigmaToken(e.target.value)}
+                  className="flex-1 px-3.5 py-2 rounded-lg border border-border-medium bg-bg-input text-sm text-foreground placeholder:text-text-dim focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono"
+                  placeholder={user.figmaToken ? "••••••••••••••••••••" : "Paste your Figma token here"}
+                />
+                <button
+                  type="submit"
+                  disabled={updatingFigmaToken || figmaToken === (user.figmaToken || "")}
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-foreground text-background hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.97] transition-all cursor-pointer select-none"
+                >
+                  {updatingFigmaToken ? "Saving…" : "Save"}
+                </button>
+              </div>
+              <p className="text-[8px] text-text-dim mt-1.5 leading-normal">
+                Generate in Figma: <strong>Settings ➔ Personal Access Tokens</strong>. If set, this overrides the global fallback token.
+              </p>
+            </form>
+
             {/* Email (read-only) */}
             <div className="mt-3.5">
               <label className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-1.5 block">
@@ -373,61 +429,67 @@ export function ProfileSettingsModal({ user: initialUser, isOpen, onClose }: Pro
                   ? "bg-indigo-500/10 text-indigo-400"
                   : "bg-bg-card-active text-text-muted"
               }`}>
-                {isPro ? "$9/mo" : "Free"}
+                {user.role === "admin" ? "Admin Tier" : isPro ? "$9/mo" : "Free"}
               </span>
             </div>
 
             <p className="text-xs text-text-muted leading-relaxed mb-4">
-              {isPro
+              {user.role === "admin"
+                ? "You have complimentary, unlimited administrator access to all Pro features."
+                : isPro
                 ? "You're on the Pro plan with unlimited exports. Manage your payment method or cancel anytime."
                 : "You're on the Free plan with 5 exports per month. Upgrade to Pro for unlimited exports."}
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-2">
-              {!isPro ? (
-                <button
-                  type="button"
-                  onClick={handleUpgradeCheckout}
-                  className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg px-4 py-2.5 shadow-lg shadow-indigo-500/20 cursor-pointer active:scale-[0.97] transition-all select-none hover:shadow-indigo-500/30"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Upgrade to Pro
-                </button>
-              ) : (
-                <>
-                  <a
-                    href="https://customer.dodopayments.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-bold bg-foreground text-background rounded-lg px-4 py-2.5 hover:opacity-90 cursor-pointer active:scale-[0.97] transition-all select-none"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                    </svg>
-                    Manage Card
-                  </a>
+            {user.role !== "admin" ? (
+              <div className="flex flex-col sm:flex-row gap-2">
+                {!isPro ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      handleClose();
-                      router.push("/settings/billing");
-                    }}
-                    className="flex-1 inline-flex items-center justify-center text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-4 py-2.5 hover:bg-rose-500/15 cursor-pointer active:scale-[0.97] transition-all select-none"
+                    onClick={handleUpgradeCheckout}
+                    className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg px-4 py-2.5 shadow-lg shadow-indigo-500/20 cursor-pointer active:scale-[0.97] transition-all select-none hover:shadow-indigo-500/30"
                   >
-                    Cancel Plan
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Upgrade to Pro
                   </button>
-                </>
-              )}
-            </div>
+                ) : (
+                  <>
+                    <a
+                      href="https://customer.dodopayments.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-bold bg-foreground text-background rounded-lg px-4 py-2.5 hover:opacity-90 cursor-pointer active:scale-[0.97] transition-all select-none"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                      </svg>
+                      Manage Card
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleClose();
+                        router.push("/settings/billing");
+                      }}
+                      className="flex-1 inline-flex items-center justify-center text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-4 py-2.5 hover:bg-rose-500/15 cursor-pointer active:scale-[0.97] transition-all select-none"
+                    >
+                      Cancel Plan
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : null}
 
-            <p className="text-[11px] text-text-dim mt-3 flex items-center gap-1.5">
-              <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
-              Payments processed securely by Dodo Payments.
-            </p>
+            {user.role !== "admin" && (
+              <p className="text-[11px] text-text-dim mt-3 flex items-center gap-1.5">
+                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+                Payments processed securely by Dodo Payments.
+              </p>
+            )}
           </div>
 
           {/* Section: Danger Zone */}

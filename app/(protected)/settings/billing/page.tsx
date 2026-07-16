@@ -21,7 +21,15 @@ export default async function BillingSettingsPage() {
     redirect("/sign-in");
   }
 
-  const { user } = session;
+  const dbUser = await db.query.users.findFirst({
+    where: (u, { eq }) => eq(u.id, session.user.id),
+  });
+
+  if (!dbUser) {
+    redirect("/sign-in");
+  }
+
+  const user = dbUser;
 
   if (!user.onboardingComplete) {
     redirect("/onboarding");

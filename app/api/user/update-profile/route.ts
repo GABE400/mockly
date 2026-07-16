@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse JSON payload
     const body = await request.json();
-    const { avatarUrl, name } = body;
+    const { avatarUrl, name, figmaToken } = body;
 
     // 3. Formulate update fields
     const updateData: Record<string, any> = {};
@@ -35,6 +35,10 @@ export async function POST(request: NextRequest) {
     
     if (name !== undefined && name.trim().length > 0) {
       updateData.name = name.trim();
+    }
+
+    if (figmaToken !== undefined) {
+      updateData.figmaToken = figmaToken.trim() || null;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -55,6 +59,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         image: user.image,
         avatarUrl: user.avatarUrl,
+        figmaToken: user.figmaToken,
       });
 
     return NextResponse.json({
