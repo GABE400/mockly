@@ -83,14 +83,24 @@ export async function POST(request: NextRequest) {
       case "subscription.active":
       case "subscription.renewed":
       case "subscription.created": {
-        console.log(`Upgrading user ${userId} to Pro plan.`);
+        const productId = subscriptionData.product_id;
+        let userPlan: "starter" | "pro" = "pro";
+
+        if (
+          productId === process.env.DODO_STARTER_MONTHLY_PRODUCT_ID ||
+          productId === process.env.DODO_STARTER_ANNUAL_PRODUCT_ID
+        ) {
+          userPlan = "starter";
+        }
+
+        console.log(`Upgrading user ${userId} to ${userPlan} plan (product_id: ${productId}).`);
         
         // Transaction to ensure atomic consistency
         await db.transaction(async (tx) => {
-          // A. Set user plan to "pro"
+          // A. Set user plan
           await tx
             .update(user)
-            .set({ plan: "pro" })
+            .set({ plan: userPlan })
             .where(eq(user.id, userId));
 
           // B. Upsert subscription record
@@ -105,7 +115,7 @@ export async function POST(request: NextRequest) {
               .set({
                 status: status,
                 currentPeriodEnd: nextBillingDate,
-                plan: "pro",
+                plan: userPlan,
               })
               .where(eq(subscriptions.dodoSubscriptionId, dodoSubId));
           } else {
@@ -113,7 +123,7 @@ export async function POST(request: NextRequest) {
               id: `sub_${crypto.randomUUID()}`,
               userId: userId,
               dodoSubscriptionId: dodoSubId,
-              plan: "pro",
+              plan: userPlan,
               status: status,
               currentPeriodEnd: nextBillingDate,
             });

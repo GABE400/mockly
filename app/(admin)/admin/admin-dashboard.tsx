@@ -21,7 +21,7 @@ interface UserRecord {
   id: string;
   name: string;
   email: string;
-  plan: "free" | "pro";
+  plan: "free" | "starter" | "pro";
   createdAt: string;
   mockupCount: number;
 }
@@ -48,7 +48,7 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
 
   // --- Users Filtering & Search ---
   const [userSearch, setUserSearch] = useState("");
-  const [userPlanFilter, setUserPlanFilter] = useState<"all" | "free" | "pro">("all");
+  const [userPlanFilter, setUserPlanFilter] = useState<"all" | "free" | "starter" | "pro">("all");
   const [userSort, setUserSort] = useState<"newest" | "oldest" | "mockups-desc" | "mockups-asc">("newest");
 
   const filteredUsers = useMemo(() => {
@@ -860,6 +860,7 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
                   >
                     <option value="all" className="bg-background">All Plans</option>
                     <option value="free" className="bg-background">Free Tier</option>
+                    <option value="starter" className="bg-background text-purple-400 font-bold">Starter Tier</option>
                     <option value="pro" className="bg-background text-indigo-400 font-bold">Pro Tier</option>
                   </select>
                 </div>
@@ -934,7 +935,9 @@ export function AdminDashboard({ adminUser, stats, users, mockups }: AdminDashbo
                             <span className={`inline-flex items-center justify-center font-bold uppercase tracking-wider text-[9px] px-2.5 py-0.5 rounded-full ${
                               u.plan === "pro"
                                 ? "bg-indigo-500/15 border border-indigo-500/20 text-indigo-400"
-                                : "bg-foreground/[0.04] border border-border-medium text-text-muted"
+                                : u.plan === "starter"
+                                  ? "bg-purple-500/15 border border-purple-500/20 text-purple-400"
+                                  : "bg-foreground/[0.04] border border-border-medium text-text-muted"
                             }`}>
                               {u.plan}
                             </span>

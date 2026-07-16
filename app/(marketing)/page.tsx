@@ -31,21 +31,31 @@ export default function MarketingPage() {
   const { theme } = useTheme();
   const { data: session } = useSession();
   const router = useRouter();
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
+  const [isLoadingStarter, setIsLoadingStarter] = useState(false);
   const [isLoadingPro, setIsLoadingPro] = useState(false);
 
-  const handleProUpgrade = async (e: React.MouseEvent) => {
+  const handleUpgradeClick = async (e: React.MouseEvent, selectedPlan: "starter" | "pro") => {
     if (!session) {
-      // User is not logged in, proceed to register page
+      // User is not logged in, proceed to signup/signin
       return;
     }
 
     e.preventDefault();
-    setIsLoadingPro(true);
+    if (selectedPlan === "starter") {
+      setIsLoadingStarter(true);
+    } else {
+      setIsLoadingPro(true);
+    }
 
     try {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: selectedPlan,
+          billingPeriod: billingPeriod,
+        }),
       });
 
       const data = await res.json();
@@ -59,6 +69,7 @@ export default function MarketingPage() {
     } catch (err: any) {
       console.error(err);
       alert(err.message || "An unexpected error occurred during checkout initialization.");
+      setIsLoadingStarter(false);
       setIsLoadingPro(false);
     }
   };
@@ -820,20 +831,49 @@ export default function MarketingPage() {
 
         {/* Pricing Section */}
         <section id="pricing" className="py-24 border-t border-border-subtle relative transition-all">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center max-w-3xl mx-auto mb-8">
             <h2 className="text-xs font-bold uppercase tracking-widest text-purple-400 mb-3">Plans & Pricing</h2>
             <h3 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground-pure mb-4">
               Simple, transparent pricing
             </h3>
-            <p className="text-text-muted leading-relaxed text-base">
-              Get started with our completely free tier or unlock unlimited high-resolution assets, luxury templates, and 3D device alignments.
+            <p className="text-text-muted leading-relaxed text-base mb-8">
+              Get started with our completely free tier, select a budget Starter plan, or unlock unlimited exports with Pro.
             </p>
+
+            {/* Monthly / Annual Toggle */}
+            <div className="inline-flex items-center gap-1.5 p-1 bg-foreground/[0.03] border border-border-medium rounded-full text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setBillingPeriod("monthly")}
+                className={`px-4 py-2 rounded-full transition-all cursor-pointer select-none ${
+                  billingPeriod === "monthly"
+                    ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/10"
+                    : "text-text-muted hover:text-foreground-pure"
+                }`}
+              >
+                Monthly billing
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingPeriod("annual")}
+                className={`px-4 py-2 rounded-full transition-all cursor-pointer select-none flex items-center gap-1.5 ${
+                  billingPeriod === "annual"
+                    ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/10"
+                    : "text-text-muted hover:text-foreground-pure"
+                }`}
+              >
+                Annual billing
+                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500 text-white leading-none">
+                  Save 33%
+                </span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mt-8">
             
             {/* Free Plan */}
-            <div className="rounded-3xl border border-border-subtle bg-bg-card p-8 md:p-10 flex flex-col justify-between relative overflow-hidden group transition-all">
+            <div className="rounded-3xl border border-border-subtle bg-bg-card p-8 flex flex-col justify-between relative overflow-hidden group transition-all">
               <div>
                 <h4 className="text-xl font-bold text-foreground-pure mb-2">Free Plan</h4>
                 <p className="text-sm text-text-dim mb-6">For casual makers and designers.</p>
@@ -847,7 +887,7 @@ export default function MarketingPage() {
                     <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>5 high-res exports per month</span>
+                    <span>5 exports per month</span>
                   </li>
                   <li className="flex items-center gap-3 text-sm text-text-semi-muted">
                     <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -882,8 +922,76 @@ export default function MarketingPage() {
               )}
             </div>
 
+            {/* Starter Plan */}
+            <div className="rounded-3xl border border-border-subtle bg-bg-card p-8 flex flex-col justify-between relative overflow-hidden group transition-all">
+              <div>
+                <h4 className="text-xl font-bold text-foreground-pure mb-2">Starter Plan</h4>
+                <p className="text-sm text-text-dim mb-6">For indie makers and creators.</p>
+                <div className="flex items-baseline gap-1 text-foreground-pure mb-8">
+                  <span className="text-4xl md:text-5xl font-extrabold">
+                    {billingPeriod === "annual" ? "$3" : "$4"}
+                  </span>
+                  <span className="text-sm text-text-dim">/ month</span>
+                </div>
+
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="font-semibold text-foreground-pure">30 exports per month</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Standard mobile device frames</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Solid & gradient backgrounds</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-text-semi-muted">
+                    <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="font-semibold text-foreground-pure">No watermarks</span>
+                  </li>
+                </ul>
+              </div>
+
+              {session ? (
+                session.user.plan === "starter" ? (
+                  <Link 
+                    href="/settings/billing"
+                    className="w-full inline-flex items-center justify-center text-sm font-semibold border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 rounded-xl py-3 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+                  >
+                    Manage Subscription
+                  </Link>
+                ) : (
+                  <button 
+                    onClick={(e) => handleUpgradeClick(e, "starter")}
+                    disabled={isLoadingStarter}
+                    className="w-full inline-flex items-center justify-center text-sm font-semibold border border-border-medium hover:bg-bg-card-hover text-foreground-pure rounded-xl py-3 active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoadingStarter ? "Loading..." : "Upgrade to Starter"}
+                  </button>
+                )
+              ) : (
+                <Link 
+                  id="pricing-starter-cta"
+                  href={`/sign-up?plan=starter&period=${billingPeriod}`}
+                  className="w-full inline-flex items-center justify-center text-sm font-semibold border border-border-medium hover:bg-bg-card-hover text-foreground-pure rounded-xl py-3 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+                >
+                  Upgrade to Starter
+                </Link>
+              )}
+            </div>
+
             {/* Pro Plan */}
-            <div className="rounded-3xl border-2 border-indigo-500/30 bg-bg-card p-8 md:p-10 flex flex-col justify-between relative overflow-hidden group shadow-xl shadow-indigo-500/[0.04] transition-all">
+            <div className="rounded-3xl border-2 border-indigo-500/30 bg-bg-card p-8 flex flex-col justify-between relative overflow-hidden group shadow-xl shadow-indigo-500/[0.04] transition-all">
               {/* Featured Badge */}
               <div className="absolute top-4 right-4 rounded-full bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-400">
                 Most Popular
@@ -893,7 +1001,9 @@ export default function MarketingPage() {
                 <h4 className="text-xl font-bold text-foreground-pure mb-2">Pro Plan</h4>
                 <p className="text-sm text-text-dim mb-6">For professional designers and creators.</p>
                 <div className="flex items-baseline gap-1 text-foreground-pure mb-8">
-                  <span className="text-4xl md:text-5xl font-extrabold">$9</span>
+                  <span className="text-4xl md:text-5xl font-extrabold">
+                    {billingPeriod === "annual" ? "$6" : "$9"}
+                  </span>
                   <span className="text-sm text-text-dim">/ month</span>
                 </div>
 
@@ -908,7 +1018,7 @@ export default function MarketingPage() {
                     <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>All premium mobile frames (iPhone, Pixel, Galaxy S24)</span>
+                    <span>All premium mobile frames</span>
                   </li>
                   <li className="flex items-center gap-3 text-sm text-text-semi-muted">
                     <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -920,7 +1030,7 @@ export default function MarketingPage() {
                     <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>No watermarks & pristine HD exports</span>
+                    <span>No watermarks & HD clean exports</span>
                   </li>
                 </ul>
               </div>
@@ -935,28 +1045,21 @@ export default function MarketingPage() {
                   </Link>
                 ) : (
                   <button 
-                    onClick={handleProUpgrade}
+                    onClick={(e) => handleUpgradeClick(e, "pro")}
                     disabled={isLoadingPro}
                     className="w-full inline-flex items-center justify-center text-sm font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl py-3 shadow-lg shadow-indigo-500/25 hover:opacity-90 active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-50"
                   >
-                    {isLoadingPro ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Loading checkout...
-                      </>
-                    ) : (
-                      "Upgrade to Pro"
-                    )}
+                    {isLoadingPro ? "Loading..." : "Upgrade to Pro"}
                   </button>
                 )
               ) : (
-                <a 
+                <Link 
                   id="pricing-pro-cta"
-                  href="/sign-up?plan=pro"
-                  className="w-full inline-flex items-center justify-center text-sm font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl py-3 shadow-lg shadow-indigo-500/25 hover:opacity-90 active:scale-[0.98] transition-all duration-200"
+                  href={`/sign-up?plan=pro&period=${billingPeriod}`}
+                  className="w-full inline-flex items-center justify-center text-sm font-semibold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl py-3 shadow-lg shadow-indigo-500/25 hover:opacity-90 active:scale-[0.98] transition-all duration-200 cursor-pointer"
                 >
                   Upgrade to Pro
-                </a>
+                </Link>
               )}
             </div>
 

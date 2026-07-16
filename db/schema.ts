@@ -8,7 +8,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
   avatarUrl: text("avatar_url"),
-  plan: text("plan").$type<"free" | "pro">().default("free").notNull(),
+  plan: text("plan").$type<"free" | "starter" | "pro">().default("free").notNull(),
   role: text("role").$type<"admin" | "user">().default("user").notNull(),
   onboardingAnswers: jsonb("onboarding_answers"),
   onboardingComplete: boolean("onboarding_complete").default(false).notNull(),

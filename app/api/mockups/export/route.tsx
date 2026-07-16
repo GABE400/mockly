@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       ];
     }
 
-    // 3. Enforce monthly export quota for Free Plan users (5 exports/month)
+    // 3. Enforce monthly export quota (Free: 5 exports/mo, Starter: 30 exports/mo, Pro: Unlimited)
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -111,9 +111,11 @@ export async function POST(request: NextRequest) {
         )
       );
 
-    if (user.plan === "free" && user.role !== "admin" && monthExports.length >= 5) {
+    const exportLimit = user.plan === "free" ? 5 : user.plan === "starter" ? 30 : Infinity;
+
+    if (user.role !== "admin" && monthExports.length >= exportLimit) {
       return NextResponse.json(
-        { error: "Export limit reached. Please upgrade to Pro to unlock unlimited exports." },
+        { error: `Export limit reached for your ${user.plan} plan. Please upgrade to a higher tier to unlock more exports.` },
         { status: 403 }
       );
     }

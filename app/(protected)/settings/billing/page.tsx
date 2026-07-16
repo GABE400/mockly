@@ -138,7 +138,7 @@ export default async function BillingSettingsPage() {
 
         {/* Billing Client Interface Card */}
         <BillingClient 
-          plan={user.plan === "pro" ? "pro" : "free"} 
+          plan={(user.plan as "free" | "starter" | "pro") || "free"} 
           status={userSub ? userSub.status : null} 
           currentPeriodEnd={userSub ? userSub.currentPeriodEnd.toISOString() : null}
           usageCount={currentMonthUsage}

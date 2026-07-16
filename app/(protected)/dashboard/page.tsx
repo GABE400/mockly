@@ -134,14 +134,14 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-text-semi-muted">Account Tier:</span>
             <span className="text-xs font-black uppercase tracking-wider bg-gradient-to-r from-indigo-500 to-pink-500 text-white px-3.5 py-1 rounded-full shadow-lg shadow-indigo-500/15 select-none">
-              {user.plan === "pro" ? "Pro Plan" : "Free Plan"}
+              {user.plan === "pro" ? "Pro Plan" : user.plan === "starter" ? "Starter Plan" : "Free Plan"}
             </span>
           </div>
         </section>
 
         {/* Mockup Sandbox Component */}
         <MockupBuilder 
-          plan={user.plan === "pro" ? "pro" : "free"} 
+          plan={(user.plan as "free" | "starter" | "pro") || "free"} 
           initialUsage={currentMonthUsage} 
           initialMockups={serializedMockups} 
           userRole={user.role as "admin" | "user"}

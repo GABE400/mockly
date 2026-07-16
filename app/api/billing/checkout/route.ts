@@ -19,13 +19,36 @@ export async function POST(request: NextRequest) {
 
     const { user } = session;
 
-    // 2. Fetch Dodo Payments Product ID from environment variables
-    const productId = process.env.DODO_PRO_PRODUCT_ID;
+    // 2. Resolve the dynamic Dodo Payments Product ID from body parameters
+    let plan = "pro";
+    let billingPeriod = "monthly";
 
-    if (!productId || productId === "p_placeholder") {
-      console.error("Missing DODO_PRO_PRODUCT_ID environment variable.");
+    try {
+      const body = await request.json();
+      if (body) {
+        if (body.plan) plan = body.plan;
+        if (body.billingPeriod) billingPeriod = body.billingPeriod;
+      }
+    } catch (e) {
+      // Body might be empty or invalid JSON, ignore and fallback to defaults
+    }
+
+    let productId: string | undefined;
+
+    if (plan === "starter") {
+      productId = billingPeriod === "annual" 
+        ? process.env.DODO_STARTER_ANNUAL_PRODUCT_ID 
+        : process.env.DODO_STARTER_MONTHLY_PRODUCT_ID;
+    } else {
+      productId = billingPeriod === "annual" 
+        ? process.env.DODO_PRO_ANNUAL_PRODUCT_ID 
+        : process.env.DODO_PRO_MONTHLY_PRODUCT_ID || process.env.DODO_PRO_PRODUCT_ID; // fallback to legacy
+    }
+
+    if (!productId || productId === "p_placeholder" || productId === "") {
+      console.error(`Missing Dodo Payments Product ID for plan=${plan}, billingPeriod=${billingPeriod}`);
       return NextResponse.json(
-        { error: "Billing setup is incomplete. Please configure your Pro Product ID in .env" },
+        { error: `Billing setup is incomplete for plan: ${plan} (${billingPeriod}). Please configure your Product IDs in .env` },
         { status: 500 }
       );
     }

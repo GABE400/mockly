@@ -76,7 +76,7 @@ interface MockupRecord {
 }
 
 interface MockupBuilderProps {
-  plan: "free" | "pro";
+  plan: "free" | "starter" | "pro";
   initialUsage: number;
   initialMockups: MockupRecord[];
   userRole?: "admin" | "user";
@@ -856,7 +856,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isFittingAspect, setIsFittingAspect] = useState(false);
 
-  const maxScreens = plan === "free" ? 3 : 7;
+  const maxScreens = plan === "pro" ? 7 : 3;
+  const isLimitReached = userRole !== "admin" && (plan === "free" ? usageCount >= 5 : plan === "starter" ? usageCount >= 30 : false);
 
   // Dynamic Bounding Box calculation for rendering exact cropped preview inside the modal
   const previewData = useMemo(() => {
@@ -958,21 +959,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   const currentScale = zoomMode === "fit" ? fitScale : customZoom / 100;
 
 
-  const handleUpgrade = async () => {
-    setIsUpgrading(true);
-    try {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create checkout session.");
-      window.location.href = data.checkoutUrl;
-    } catch (err: any) {
-      console.error(err);
-      showToast(err.message || "An unexpected error occurred during checkout.", "error");
-      setIsUpgrading(false);
-    }
+  const handleUpgrade = () => {
+    window.location.href = "/settings/billing";
   };
 
   // Find active node in React Flow (selected === true)
@@ -1045,7 +1033,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
     if (availableSlots <= 0) {
       showToast(`Limit reached: You can upload up to ${maxScreens} screens on your ${plan} plan.`, "error");
-      if (plan === "free") setShowLimitModal(true);
+      if (plan !== "pro") setShowLimitModal(true);
       return;
     }
 
@@ -1054,7 +1042,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
     if (skippedCount > 0) {
       showToast(`Adding ${filesToUpload.length} screens. Skipped ${skippedCount} screen(s) due to ${plan} plan limits.`, "error");
-      if (plan === "free") {
+      if (plan !== "pro") {
         setTimeout(() => setShowLimitModal(true), 1200);
       }
     }
@@ -1170,7 +1158,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
     if (availableSlots <= 0) {
       showToast(`Limit reached: You can upload up to ${maxScreens} screens on your ${plan} plan.`, "error");
-      if (plan === "free") setShowLimitModal(true);
+      if (plan !== "pro") setShowLimitModal(true);
       return;
     }
 
@@ -1420,7 +1408,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
       return;
     }
 
-    if (plan === "free" && userRole !== "admin" && usageCount >= 5) {
+    if (isLimitReached) {
       setShowLimitModal(true);
       return;
     }
@@ -1504,7 +1492,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
       return;
     }
 
-    if (plan === "free" && userRole !== "admin" && usageCount + validBoards.length > 5) {
+    const limit = plan === "free" ? 5 : plan === "starter" ? 30 : Infinity;
+    if (userRole !== "admin" && usageCount + validBoards.length > limit) {
       setShowLimitModal(true);
       return;
     }
@@ -1575,25 +1564,17 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
               </svg>
             </div>
 
-            <h3 className="text-xl font-extrabold text-foreground-pure mb-2">Upgrade to Pro</h3>
+            <h3 className="text-xl font-extrabold text-foreground-pure mb-2">Upgrade Plan</h3>
             <p className="text-sm text-text-muted mb-6 leading-relaxed">
-              Export unlimited high-res multi-device renders, position up to **7 devices on canvas**, and style with premium custom presets!
+              Unlock higher monthly export limits (or unlimited exports), additional canvas screens, and premium style presets by upgrading your plan!
             </p>
 
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleUpgrade}
-                disabled={isUpgrading}
                 className="w-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-bold py-3 rounded-full text-sm shadow-lg shadow-indigo-500/25 active:scale-95 transition-all select-none flex items-center justify-center gap-2 cursor-pointer"
               >
-                {isUpgrading ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  "Unlock Unlimited for $9/mo"
-                )}
+                View Pricing Plans
               </button>
               <button
                 onClick={() => setShowLimitModal(false)}
@@ -1817,7 +1798,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                   type="button"
                   disabled={isExporting}
                   onClick={() => {
-                    if (plan === "free" && userRole !== "admin" && usageCount >= 5) {
+                    if (isLimitReached) {
                       setShowLimitModal(true);
                     } else {
                       setShowPreviewModal(false);
@@ -1825,15 +1806,15 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                     }
                   }}
                   className={`px-6 py-2.5 rounded-full text-xs font-black shadow-lg transition-all select-none cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                    plan === "free" && userRole !== "admin" && usageCount >= 5
+                    isLimitReached
                       ? "bg-rose-500/20 text-rose-300 border border-rose-500/20 hover:bg-rose-500/30"
                       : "bg-gradient-to-r from-indigo-500 to-pink-500 text-white shadow-indigo-500/10 hover:shadow-indigo-500/20"
                   }`}
                 >
-                  {plan === "free" && userRole !== "admin" && usageCount >= 5 ? (
+                  {isLimitReached ? (
                     <>
                       <svg className="w-3.5 h-3.5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
                       Upgrade to Export
                     </>
@@ -2437,15 +2418,15 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-text-muted">Quota Usage:</span>
-                  <span className={`font-black ${plan === "free" && userRole !== "admin" && usageCount >= 5 ? "text-rose-400" : "text-indigo-400"}`}>
+                  <span className={`font-black ${isLimitReached ? "text-rose-400" : "text-indigo-400"}`}>
                     {userRole === "admin" ? (
                       "∞ (Admin Free Access)"
                     ) : (
-                      `${usageCount} / ${plan === "free" ? "5" : "∞"} free exports used`
+                      `${usageCount} / ${plan === "free" ? "5" : plan === "starter" ? "30" : "∞"} exports used`
                     )}
                   </span>
                 </div>
-                {plan === "free" && userRole !== "admin" && (
+                {plan !== "pro" && userRole !== "admin" && (
                   <button
                     type="button"
                     onClick={() => setShowLimitModal(true)}
@@ -2473,12 +2454,12 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
               <button
                 type="button"
-                disabled={nodes.length === 0 || isExporting || (plan === "free" && userRole !== "admin" && usageCount >= 5)}
+                disabled={nodes.length === 0 || isExporting || isLimitReached}
                 onClick={() => handleExport()}
                 className={`w-full font-extrabold text-sm py-3.5 rounded-full shadow-lg transition-all flex items-center justify-center gap-2 select-none cursor-pointer ${
                   nodes.length === 0
                     ? "bg-foreground/5 text-text-muted border border-border-medium cursor-not-allowed"
-                    : plan === "free" && userRole !== "admin" && usageCount >= 5
+                    : isLimitReached
                       ? "bg-rose-500/20 text-rose-300 border border-rose-500/20 cursor-not-allowed"
                       : isExporting
                         ? "bg-indigo-500/80 text-white cursor-wait"
@@ -2490,7 +2471,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Generating Dynamic PNG...
                   </>
-                ) : plan === "free" && userRole !== "admin" && usageCount >= 5 ? (
+                ) : isLimitReached ? (
                   "Limit Reached — Upgrade to Export"
                 ) : nodes.length === 0 ? (
                   "Upload Screenshots to Export"
