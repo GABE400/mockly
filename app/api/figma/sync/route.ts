@@ -5,6 +5,39 @@ import { imagekit } from "@/lib/imagekit";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import fs from "fs";
+import path from "path";
+
+const CACHE_FILE = path.join(process.cwd(), ".next", "figma-cache.json");
+
+interface CacheEntry {
+  url: string;
+  fileId: string;
+  lastModified: string;
+}
+
+function readCache(): Record<string, CacheEntry> {
+  try {
+    if (fs.existsSync(CACHE_FILE)) {
+      return JSON.parse(fs.readFileSync(CACHE_FILE, "utf-8"));
+    }
+  } catch (e) {
+    console.error("[Figma Sync Cache] Failed to read cache file:", e);
+  }
+  return {};
+}
+
+function writeCache(cache: Record<string, CacheEntry>) {
+  try {
+    const dir = path.dirname(CACHE_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), "utf-8");
+  } catch (e) {
+    console.error("[Figma Sync Cache] Failed to write cache file:", e);
+  }
+}
 
 // Parser to fetch fileKey and node-ids (can support multiple frames selected at once)
 function parseFigmaUrl(url: string) {
@@ -47,13 +80,16 @@ class RateLimitError extends Error {
 }
 
 // Parses the Retry-After header safely handling seconds, milliseconds, HTTP-dates, and Unix timestamps.
-function parseRetryAfter(headerValue: string | null): number | null {
+// Uses the server's response date as a baseline to prevent local system clock drift from distorting the delay.
+function parseRetryAfter(headerValue: string | null, serverDateHeader: string | null): number | null {
   if (!headerValue) return null;
+  
+  const nowBaseline = serverDateHeader ? (Date.parse(serverDateHeader) || Date.now()) : Date.now();
   
   // 1. Try parsing as a standard HTTP-date string (e.g. "Thu, 16 Jul 2026 12:49:49 GMT")
   const parsedDate = Date.parse(headerValue);
   if (!isNaN(parsedDate)) {
-    const diff = parsedDate - Date.now();
+    const diff = parsedDate - nowBaseline;
     return diff > 0 ? diff : 0;
   }
 
@@ -63,7 +99,7 @@ function parseRetryAfter(headerValue: string | null): number | null {
 
   // If it's a Unix epoch timestamp in seconds (e.g. 1784208588)
   if (parsedNum > 1000000000) {
-    const diffMs = (parsedNum * 1000) - Date.now();
+    const diffMs = (parsedNum * 1000) - nowBaseline;
     return diffMs > 0 ? diffMs : 0;
   }
 
@@ -89,7 +125,8 @@ async function fetchWithRetry(url: string, options: CustomRequestInit, retries =
     
     if (res.status === 429) {
       const retryAfterHeader = res.headers.get("retry-after");
-      const waitTime = parseRetryAfter(retryAfterHeader) || (delay * Math.pow(2, i));
+      const serverDateHeader = res.headers.get("date");
+      const waitTime = parseRetryAfter(retryAfterHeader, serverDateHeader) || (delay * Math.pow(2, i));
 
       // If we need to wait more than 10 seconds, abort retry to avoid serverless function timeouts
       if (waitTime > 10000) {
@@ -121,29 +158,48 @@ async function fetchWithRetry(url: string, options: CustomRequestInit, retries =
   return fetch(url, fetchOptions); // Final fallback attempt
 }
 
+// Recursive helper to find a node by ID in the document tree
+function findNodeInTree(node: any, targetId: string): any {
+  if (!node) return null;
+  if (node.id === targetId) return node;
+  if (node.children) {
+    for (const child of node.children) {
+      const found = findNodeInTree(child, targetId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 // Helper to inspect node structure and unpack children of sections, groups, and large layout canvases.
 // ANY node that contains 2+ child FRAME/COMPONENT/INSTANCE nodes is treated as a container and unpacked.
-async function resolveNodeIds(fileKey: string, nodeIds: string[], token: string, isSharedToken: boolean): Promise<string[]> {
+async function resolveNodeIds(
+  fileKey: string, 
+  nodeIds: string[], 
+  token: string, 
+  isSharedToken: boolean
+): Promise<{ resolvedIds: string[]; lastModified?: string }> {
   try {
-    // Use the Figma /nodes endpoint to fetch specific node trees with children
-    const figmaFileUrl = `https://api.figma.com/v1/files/${fileKey}/nodes?ids=${nodeIds.join(",")}`;
-    console.log("[Figma Sync] Fetching file structure:", figmaFileUrl);
+    // Fetch structure for only selected nodes up to depth=2 (shallow & fast, avoids heavy nested vector/text downloads)
+    const figmaFileUrl = `https://api.figma.com/v1/files/${fileKey}?ids=${nodeIds.join(",")}&depth=2`;
+    console.log("[Figma Sync] Fetching file structure (shallow):", figmaFileUrl);
     const res = await fetchWithRetry(figmaFileUrl, {
       headers: { "X-Figma-Token": token },
       isSharedToken,
     });
     if (!res.ok) {
       console.warn("[Figma Sync] File structure fetch failed, using original node IDs");
-      return nodeIds;
+      return { resolvedIds: nodeIds };
     }
 
     const data = await res.json();
     const resolvedIds: string[] = [];
 
     for (const nodeId of nodeIds) {
-      const nodeData = data.nodes?.[nodeId]?.document;
+      // Find the requested node document inside the returned document tree
+      const nodeData = findNodeInTree(data.document, nodeId);
       if (!nodeData) {
-        console.log(`[Figma Sync] Node ${nodeId}: not found in response, keeping as-is`);
+        console.log(`[Figma Sync] Node ${nodeId}: not found in response document tree, keeping as-is`);
         resolvedIds.push(nodeId);
         continue;
       }
@@ -172,10 +228,10 @@ async function resolveNodeIds(fileKey: string, nodeIds: string[], token: string,
     }
 
     console.log(`[Figma Sync] Resolved ${nodeIds.length} input node(s) → ${resolvedIds.length} screen node(s):`, resolvedIds);
-    return resolvedIds;
+    return { resolvedIds, lastModified: data.lastModified };
   } catch (e) {
     console.error("[Figma Sync] Error resolving node IDs:", e);
-    return nodeIds;
+    return { resolvedIds: nodeIds };
   }
 }
 
@@ -233,67 +289,121 @@ export async function POST(request: NextRequest) {
     }
 
     // 3.5 Resolve container nodes (sections, groups, canvas frames) to child screen nodes
-    const resolvedIds = await resolveNodeIds(fileKey, nodeIds, token, isSharedToken);
-
-    // 4. Request Figma server-side render for all resolved nodes (PNG at @2x scale)
-    console.log(`[Figma Sync] Requesting images for ${resolvedIds.length} node(s):`, resolvedIds);
-    const figmaApiUrl = `https://api.figma.com/v1/images/${fileKey}?ids=${resolvedIds.join(",")}&format=png&scale=2`;
-    const figmaRes = await fetchWithRetry(figmaApiUrl, {
-      headers: {
-        "X-Figma-Token": token,
-      },
-      isSharedToken,
-    });
-
-    const figmaData = await figmaRes.json();
-
-    if (!figmaRes.ok) {
-      console.error("[Figma Sync] Image API error:", figmaData);
-      return NextResponse.json(
-        { error: figmaData.err || "Failed to fetch images from Figma. Ensure your file is public or your token has access." },
-        { status: figmaRes.status }
-      );
-    }
-
-    const imageEntries = figmaData.images ? Object.entries(figmaData.images) : [];
-    console.log(`[Figma Sync] Figma returned ${imageEntries.length} image(s):`, Object.keys(figmaData.images || {}));
-
-    if (imageEntries.length === 0) {
-      return NextResponse.json(
-        { error: "Figma did not return any image frames. Please verify you selected valid frames." },
-        { status: 404 }
-      );
-    }
+    const { resolvedIds, lastModified } = await resolveNodeIds(fileKey, nodeIds, token, isSharedToken);
 
     const screenshots: Array<{ nodeId: string; url: string; fileId: string }> = [];
+    const nodesToRender: string[] = [];
 
-    // 5. Download image binaries and upload to ImageKit
-    for (const [nodeId, imageUrl] of Object.entries(figmaData.images)) {
-      if (!imageUrl) continue;
+    // Load persistent cache
+    const cache = readCache();
+    const activeLastModified = lastModified || "unknown";
 
-      try {
-        const imgResponse = await fetchWithRetry(imageUrl as string, {});
-        if (!imgResponse.ok) continue;
+    console.log(`[Figma Sync Cache] Checking cache for ${resolvedIds.length} resolved node(s)...`);
+    for (const nodeId of resolvedIds) {
+      const cacheKey = `${fileKey}_${nodeId}`;
+      const cached = cache[cacheKey];
 
-        const arrayBuffer = await imgResponse.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64File = buffer.toString("base64");
-
-        // Upload to ImageKit
-        const uploadRes = await imagekit.upload({
-          file: base64File,
-          fileName: `figma-${fileKey}-${nodeId.replace(/:/g, "-")}-${Date.now()}.png`,
-          folder: `/mockly/screenshots/${session.user.id}`,
-        });
-
+      if (cached && cached.lastModified === activeLastModified && cached.url) {
+        console.log(`[Figma Sync Cache] Cache HIT for node ${nodeId} (${cached.url})`);
         screenshots.push({
           nodeId,
-          url: uploadRes.url,
-          fileId: uploadRes.fileId,
+          url: cached.url,
+          fileId: cached.fileId,
         });
-      } catch (uploadError) {
-        console.error(`Failed to process frame ${nodeId}:`, uploadError);
+      } else {
+        console.log(`[Figma Sync Cache] Cache MISS for node ${nodeId} (reason: ${cached ? "outdated" : "not in cache"})`);
+        nodesToRender.push(nodeId);
       }
+    }
+
+    if (nodesToRender.length > 0) {
+      console.log(`[Figma Sync] Cache misses found. Requesting renders sequentially for ${nodesToRender.length} node(s)...`);
+      let cacheUpdated = false;
+
+      for (let idx = 0; idx < nodesToRender.length; idx++) {
+        const nodeId = nodesToRender[idx];
+        console.log(`[Figma Sync] Rendering node ${idx + 1}/${nodesToRender.length}: ${nodeId}`);
+        
+        try {
+          const figmaApiUrl = `https://api.figma.com/v1/images/${fileKey}?ids=${nodeId}&format=png&scale=1`;
+          const figmaRes = await fetchWithRetry(figmaApiUrl, {
+            headers: {
+              "X-Figma-Token": token,
+            },
+            isSharedToken,
+          });
+
+          if (!figmaRes.ok) {
+            const errData = await figmaRes.json();
+            console.error(`[Figma Sync] Failed to render node ${nodeId}:`, errData);
+            continue;
+          }
+
+          const figmaData = await figmaRes.json();
+          const imageUrl = figmaData.images?.[nodeId];
+          if (!imageUrl) {
+            console.warn(`[Figma Sync] No image URL returned for node ${nodeId}`);
+            continue;
+          }
+
+          // Download image binary
+          const imgResponse = await fetchWithRetry(imageUrl, {});
+          if (!imgResponse.ok) continue;
+
+          const arrayBuffer = await imgResponse.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const base64File = buffer.toString("base64");
+
+          // Upload to ImageKit
+          const uploadRes = await imagekit.upload({
+            file: base64File,
+            fileName: `figma-${fileKey}-${nodeId.replace(/:/g, "-")}-${Date.now()}.png`,
+            folder: `/mockly/screenshots/${session.user.id}`,
+          });
+
+          // Add to response screenshots
+          screenshots.push({
+            nodeId,
+            url: uploadRes.url,
+            fileId: uploadRes.fileId,
+          });
+
+          // Save to cache
+          const cacheKey = `${fileKey}_${nodeId}`;
+          cache[cacheKey] = {
+            url: uploadRes.url,
+            fileId: uploadRes.fileId,
+            lastModified: activeLastModified,
+          };
+          cacheUpdated = true;
+
+          // Sleep for 500ms between sequential requests to prevent triggering burst rate limits
+          if (idx < nodesToRender.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        } catch (error: any) {
+          console.error(`[Figma Sync] Error processing node ${nodeId}:`, error);
+          if (cacheUpdated) {
+            writeCache(cache);
+          }
+          
+          if (error.name === "RateLimitError") {
+            // If we have at least one successfully resolved screenshot, return them instead of crashing
+            if (screenshots.length > 0) {
+              console.warn("[Figma Sync] Hit rate limit, but returning successfully fetched screenshots.");
+              return NextResponse.json({ screenshots });
+            }
+            throw error; // Let the outer catch block handle it
+          }
+        }
+      }
+
+      // Persist updated cache
+      if (cacheUpdated) {
+        writeCache(cache);
+      }
+    } else {
+      console.log("[Figma Sync Cache] All nodes resolved from cache! No Figma Image API calls needed.");
     }
 
     if (screenshots.length === 0) {

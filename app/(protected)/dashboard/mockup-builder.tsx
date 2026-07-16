@@ -9,6 +9,7 @@ import {
   Node,
   ReactFlowProvider,
   NodeResizer,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -84,6 +85,7 @@ interface MockupBuilderProps {
 
 // React Flow Custom Node Renderer Component
 function CustomDeviceNode({ id, data, selected }: any) {
+  const { updateNodeData } = useReactFlow();
   const activeColor = FRAME_COLORS.find((c) => c.id === data.frameColor) || FRAME_COLORS[0];
   
   let outerBezelBorder = "border-[#1e2029]";
@@ -236,7 +238,16 @@ function CustomDeviceNode({ id, data, selected }: any) {
         {/* Inner Glass Bezel & Screen Wrapper */}
         <div className="w-full h-full rounded-[29px] bg-black p-[3.5px] overflow-hidden flex relative">
           <div className="w-full h-full relative rounded-[25px] overflow-hidden bg-[#0c0d12] flex items-center justify-center">
-            {data.screenshotUrl ? (
+            {data.isEmbed && data.embedUrl ? (
+              <iframe
+                src={data.embedUrl}
+                title="Figma Live Embed"
+                className={`w-full h-full border-0 select-none z-10 bg-[#0c0d12] ${
+                  data.interactive ? "pointer-events-auto" : "pointer-events-none"
+                }`}
+                allowFullScreen
+              />
+            ) : data.screenshotUrl ? (
               <img 
                 src={data.screenshotUrl} 
                 alt="Screenshot Preview" 
@@ -252,31 +263,65 @@ function CustomDeviceNode({ id, data, selected }: any) {
               </div>
             )}
 
-            {/* Premium Dynamic Glass Glare Overlay */}
-            <div 
-              className="absolute inset-0 pointer-events-none z-20 opacity-85"
-              style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 65%)"
-              }}
-            />
+            {/* Premium Dynamic Glass Glare Overlay - only show when not interacting so glare doesn't block the prototype */}
+            {!data.interactive && (
+              <div 
+                className="absolute inset-0 pointer-events-none z-20 opacity-85"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0) 65%)"
+                }}
+              />
+            )}
           </div>
         </div>
 
       </div>
 
       {selected && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            data.onDelete(id);
-          }}
-          className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-rose-600 border border-rose-500/20 text-white flex items-center justify-center shadow-lg active:scale-90 hover:bg-rose-500 transition-all z-50 cursor-pointer"
-          title="Delete screen"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
+        <div className="absolute -top-3 -right-3 flex gap-1.5 z-50">
+          {data.isEmbed && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                updateNodeData(id, { interactive: !data.interactive });
+              }}
+              className={`px-2.5 py-1 rounded-full text-[9px] font-bold shadow-lg border transition-all active:scale-95 cursor-pointer flex items-center gap-1 ${
+                data.interactive 
+                  ? "bg-amber-600 hover:bg-amber-500 border-amber-400 text-white" 
+                  : "bg-indigo-600 hover:bg-indigo-500 border-indigo-400 text-white"
+              }`}
+              title={data.interactive ? "Lock canvas dragging" : "Interact with Figma preview"}
+            >
+              {data.interactive ? (
+                <>
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span>Lock Drag</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                  </svg>
+                  <span>Interact</span>
+                </>
+              )}
+            </button>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              data.onDelete(id);
+            }}
+            className="w-7 h-7 rounded-full bg-rose-600 border border-rose-500/20 text-white flex items-center justify-center shadow-lg active:scale-90 hover:bg-rose-500 transition-all cursor-pointer"
+            title="Delete screen"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
       )}
     </div>
   );
@@ -848,6 +893,9 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   const [isDragging, setIsDragging] = useState(false);
   const [figmaUrlInput, setFigmaUrlInput] = useState("");
   const [isSyncingFigma, setIsSyncingFigma] = useState(false);
+  const [figmaSyncRetrySeconds, setFigmaSyncRetrySeconds] = useState(0);
+  const figmaSyncTimerRef = useRef<any>(null);
+  const [figmaSyncMode, setFigmaSyncMode] = useState<"static" | "live">("live");
 
   // Export & Quota States
   const [isExporting, setIsExporting] = useState(false);
@@ -1137,8 +1185,114 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     }
   };
 
+  // Client-side Figma URL parser for Live Embeds
+  const parseFigmaUrlClient = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split("/").filter(Boolean);
+      if (pathParts.length < 2 || (pathParts[0] !== "design" && pathParts[0] !== "file" && pathParts[0] !== "proto")) {
+        return null;
+      }
+      const fileKey = pathParts[1];
+      const rawNodeIds = urlObj.searchParams.getAll("node-id");
+      const nodeIds = rawNodeIds.flatMap((id) => id.split(",").map((x) => x.trim())).filter(Boolean);
+      const resolvedNodeIds = nodeIds.map((id) => id.replace(/-/g, ":"));
+      return { fileKey, nodeIds: resolvedNodeIds };
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const handleSyncFigmaLive = () => {
+    const currentCount = nodes.length;
+    const parsed = parseFigmaUrlClient(figmaUrlInput);
+    
+    let fileKey = "";
+    let nodeIds: string[] = [];
+    
+    if (parsed) {
+      fileKey = parsed.fileKey;
+      nodeIds = parsed.nodeIds;
+    } else {
+      const match = figmaUrlInput.match(/file\/([a-zA-Z0-9]+)/) || 
+                    figmaUrlInput.match(/design\/([a-zA-Z0-9]+)/) || 
+                    figmaUrlInput.match(/proto\/([a-zA-Z0-9]+)/);
+      if (match) {
+        fileKey = match[1];
+      }
+    }
+
+    if (!fileKey) {
+      showToast("Invalid Figma URL format. Please paste a valid Figma design or selection link.", "error");
+      return;
+    }
+
+    // Default to canvas/page 0:1 if no specific frame is selected
+    const targets = nodeIds.length > 0 ? nodeIds : ["0:1"];
+    
+    // Check limit
+    let screensToImport = targets;
+    const spaceLeft = maxScreens - currentCount;
+    if (screensToImport.length > spaceLeft) {
+      screensToImport = screensToImport.slice(0, spaceLeft);
+      showToast(`Omitted ${targets.length - spaceLeft} screen(s) to stay within your plan limit of ${maxScreens} screens.`, "error");
+    }
+
+    if (screensToImport.length === 0) return;
+
+    const newNodesList: Node[] = [];
+
+    for (let idx = 0; idx < screensToImport.length; idx++) {
+      const nodeId = screensToImport[idx];
+      // Construct a clean, auto-scaled prototype URL without sidebar/hotspot indicators and override any preset device frame.
+      // We pass hide-ui=1 and device-frame=false to the outer embed wrapper to hide header/footer chrome and avoid double-device wrapping.
+      const targetProtoUrl = `https://www.figma.com/proto/${fileKey}?node-id=${nodeId.replace(/:/g, "-")}&scaling=scale-down&content-scaling=fixed&show-proto-sidebar=0&hotspot-hints=0&device-frame=false`;
+      const embedUrl = `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(targetProtoUrl)}&hide-ui=1&device-frame=false`;
+
+      const nodeIndex = currentCount + idx;
+      const xPos = 200 + (nodeIndex * 260) % (1200 - 172 - 100);
+      const yPos = 120 + Math.floor((nodeIndex * 260) / (1200 - 172 - 100)) * 420;
+
+      const spawnedNode: Node = {
+        id: `node-embed-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
+        type: "deviceMockup",
+        position: {
+          x: xPos,
+          y: yPos,
+        },
+        width: 172,
+        height: 364,
+        data: {
+          isEmbed: true,
+          embedUrl,
+          interactive: false,
+          deviceFrame: DEVICE_FRAMES[0].id,
+          frameColor: FRAME_COLORS[0].id,
+          tilt: ANGLES[0].id,
+          onDelete: handleDeleteNode,
+        },
+        selected: idx === screensToImport.length - 1,
+      };
+
+      newNodesList.push(spawnedNode);
+    }
+
+    setNodes((nds) => {
+      const updatedExisting = nds.map((n) => ({ ...n, selected: false }));
+      return [...updatedExisting, ...newNodesList] as Node[];
+    });
+
+    showToast(`Successfully synced ${newNodesList.length} Figma Live Embed(s)!`, "success");
+    setFigmaUrlInput("");
+  };
+
   const handleSyncFigma = async () => {
     if (!figmaUrlInput.trim()) return;
+
+    if (figmaSyncMode === "live") {
+      handleSyncFigmaLive();
+      return;
+    }
 
     const currentCount = nodes.length;
     if (currentCount >= maxScreens) {
@@ -1229,12 +1383,52 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
       showToast(`Successfully synced ${newNodesList.length} screen(s) from Figma!`, "success");
       setFigmaUrlInput(""); // Reset input
+      setFigmaSyncRetrySeconds(0);
+      if (figmaSyncTimerRef.current) {
+        clearInterval(figmaSyncTimerRef.current);
+        figmaSyncTimerRef.current = null;
+      }
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || "An unexpected error occurred during Figma sync.", "error");
-    } finally {
-      setIsSyncingFigma(false);
+      
+      // Parse retry-after seconds if present
+      const match = err.message.match(/wait (\d+) seconds/i);
+      if (match) {
+        const seconds = parseInt(match[1], 10);
+        setFigmaSyncRetrySeconds(seconds);
+        setIsSyncingFigma(true); // Keep loading active
+        
+        // Start countdown timer
+        if (figmaSyncTimerRef.current) clearInterval(figmaSyncTimerRef.current);
+        let currentSeconds = seconds;
+        figmaSyncTimerRef.current = setInterval(() => {
+          currentSeconds--;
+          setFigmaSyncRetrySeconds(currentSeconds);
+          if (currentSeconds <= 0) {
+            clearInterval(figmaSyncTimerRef.current);
+            figmaSyncTimerRef.current = null;
+            setFigmaSyncRetrySeconds(0);
+            // Re-trigger sync automatically
+            handleSyncFigma();
+          }
+        }, 1000);
+        
+        showToast(`Rate limit active. Retrying automatically in ${seconds}s...`, "error");
+      } else {
+        showToast(err.message || "An unexpected error occurred during Figma sync.", "error");
+        setIsSyncingFigma(false);
+      }
     }
+  };
+
+  const handleSwitchSyncMode = (mode: "static" | "live") => {
+    setFigmaSyncMode(mode);
+    if (figmaSyncTimerRef.current) {
+      clearInterval(figmaSyncTimerRef.current);
+      figmaSyncTimerRef.current = null;
+    }
+    setFigmaSyncRetrySeconds(0);
+    setIsSyncingFigma(false);
   };
 
   const processImageUploadsForBoard = async (filesList: FileList | File[], targetBoardId: string) => {
@@ -2022,40 +2216,106 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                   </div>
 
                   {/* Figma Link Sync Input */}
-                  <div className="border border-border-medium bg-bg-card/20 rounded-2xl p-4 flex flex-col gap-2.5 mt-1">
-                    <div className="flex items-center gap-1.5">
-                      {/* Figma Logo Accent Icon */}
-                      <svg className="w-3 shrink-0" viewBox="0 0 38 57" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ height: "12px" }}>
-                        <path d="M19 0C8.5 0 0 8.5 0 19C0 24.3 2.2 29.1 5.7 32.5C2.2 35.9 0 40.7 0 46C0 56.5 8.5 65 19 65C29.5 65 38 56.5 38 46C38 40.7 35.8 35.9 32.3 32.5C35.8 29.1 38 24.3 38 19C38 8.5 29.5 0 19 0Z" fill="#F24E1E" style={{ display: "none" }} />
-                        <path d="M9.5 28.5C4.25 28.5 0 24.25 0 19C0 13.75 4.25 9.5 9.5 9.5C14.75 9.5 19 13.75 19 19V28.5H9.5Z" fill="#F24E1E" />
-                        <path d="M9.5 47.5C4.25 47.5 0 43.25 0 38C0 32.75 4.25 28.5 9.5 28.5H19V38C19 43.25 14.75 47.5 9.5 47.5Z" fill="#A259FF" />
-                        <path d="M19 9.5C19 4.25 23.25 0 28.5 0C33.75 0 38 4.25 38 9.5C38 14.75 33.75 19 28.5 19H19V9.5Z" fill="#FF7262" />
-                        <path d="M19 19H28.5C33.75 19 38 23.25 38 28.5C38 33.75 33.75 38 28.5 38C23.25 38 19 33.75 19 28.5V19Z" fill="#1ABC9C" />
-                        <path d="M9.5 57C4.25 57 0 52.75 0 47.5C0 42.25 4.25 38 9.5 38C14.75 38 19 42.25 19 47.5C19 52.75 14.75 57 9.5 57Z" fill="#1982FC" />
-                      </svg>
-                      <span className="text-[10px] font-bold text-foreground-pure">Sync from Figma Frame</span>
+                  <div className="border border-border-medium bg-bg-card/20 rounded-2xl p-4 flex flex-col gap-3 mt-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        {/* Figma Logo Accent Icon */}
+                        <svg className="w-3 shrink-0" viewBox="0 0 38 57" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ height: "12px" }}>
+                          <path d="M19 0C8.5 0 0 8.5 0 19C0 24.3 2.2 29.1 5.7 32.5C2.2 35.9 0 40.7 0 46C0 56.5 8.5 65 19 65C29.5 65 38 56.5 38 46C38 40.7 35.8 35.9 32.3 32.5C35.8 29.1 38 24.3 38 19C38 8.5 29.5 0 19 0Z" fill="#F24E1E" style={{ display: "none" }} />
+                          <path d="M9.5 28.5C4.25 28.5 0 24.25 0 19C0 13.75 4.25 9.5 9.5 9.5C14.75 9.5 19 13.75 19 19V28.5H9.5Z" fill="#F24E1E" />
+                          <path d="M9.5 47.5C4.25 47.5 0 43.25 0 38C0 32.75 4.25 28.5 9.5 28.5H19V38C19 43.25 14.75 47.5 9.5 47.5Z" fill="#A259FF" />
+                          <path d="M19 9.5C19 4.25 23.25 0 28.5 0C33.75 0 38 4.25 38 9.5C38 14.75 33.75 19 28.5 19H19V9.5Z" fill="#FF7262" />
+                          <path d="M19 19H28.5C33.75 19 38 23.25 38 28.5C38 33.75 33.75 38 28.5 38C23.25 38 19 33.75 19 28.5V19Z" fill="#1ABC9C" />
+                          <path d="M9.5 57C4.25 57 0 52.75 0 47.5C0 42.25 4.25 38 9.5 38C14.75 38 19 42.25 19 47.5C19 52.75 14.75 57 9.5 57Z" fill="#1982FC" />
+                        </svg>
+                        <span className="text-[10px] font-bold text-foreground-pure">Sync from Figma</span>
+                      </div>
+
+                      {/* Figma Sync Mode Tabs */}
+                      <div className="flex bg-foreground/[0.04] border border-border-medium/60 p-0.5 rounded-lg text-[8px] font-bold shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchSyncMode("static")}
+                          className={`px-2 py-0.5 rounded-md transition-all text-center cursor-pointer ${
+                            figmaSyncMode === "static" ? "bg-indigo-600 text-white shadow-sm" : "text-text-dim hover:text-text-muted"
+                          }`}
+                        >
+                          Static
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchSyncMode("live")}
+                          className={`px-2 py-0.5 rounded-md transition-all text-center cursor-pointer ${
+                            figmaSyncMode === "live" ? "bg-indigo-600 text-white shadow-sm" : "text-text-dim hover:text-text-muted"
+                          }`}
+                        >
+                          Interactive
+                        </button>
+                      </div>
                     </div>
+
                     <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Paste Figma selection link..."
-                        value={figmaUrlInput}
-                        onChange={(e) => setFigmaUrlInput(e.target.value)}
-                        disabled={isSyncingFigma}
-                        className="flex-1 bg-foreground/[0.03] border border-border-medium rounded-xl px-3 py-2 text-[10px] focus:outline-none focus:border-indigo-500/50"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleSyncFigma}
-                        disabled={isSyncingFigma || !figmaUrlInput.trim()}
-                        className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-xl px-3 py-2 text-[10px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer select-none active:scale-[0.98]"
-                      >
-                        {isSyncingFigma ? (
-                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          "Sync"
-                        )}
-                      </button>
+                      {figmaSyncMode === "static" ? (
+                        <>
+                          <input
+                            type="text"
+                            placeholder={figmaSyncRetrySeconds > 0 ? "Retrying automatically..." : "Paste Figma selection link..."}
+                            value={figmaUrlInput}
+                            onChange={(e) => setFigmaUrlInput(e.target.value)}
+                            disabled={isSyncingFigma || figmaSyncRetrySeconds > 0}
+                            className="flex-1 bg-foreground/[0.03] border border-border-medium rounded-xl px-3 py-2 text-[10px] focus:outline-none focus:border-indigo-500/50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (figmaSyncRetrySeconds > 0) {
+                                if (figmaSyncTimerRef.current) clearInterval(figmaSyncTimerRef.current);
+                                figmaSyncTimerRef.current = null;
+                                setFigmaSyncRetrySeconds(0);
+                                setIsSyncingFigma(false);
+                                showToast("Auto-retry cancelled.", "success");
+                              } else {
+                                handleSyncFigma();
+                              }
+                            }}
+                            disabled={figmaSyncRetrySeconds === 0 && (isSyncingFigma || !figmaUrlInput.trim())}
+                            className={`rounded-xl px-3 py-2 text-[10px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer select-none active:scale-[0.98] ${
+                              figmaSyncRetrySeconds > 0
+                                ? "bg-amber-600 hover:bg-amber-700 text-white"
+                                : "bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white"
+                            }`}
+                          >
+                            {figmaSyncRetrySeconds > 0 ? (
+                              <span className="flex items-center gap-1.5 animate-pulse text-amber-100">
+                                <span className="w-2 h-2 rounded-full bg-amber-200 animate-ping" />
+                                Retry ({figmaSyncRetrySeconds}s)
+                              </span>
+                            ) : isSyncingFigma ? (
+                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              "Sync"
+                            )}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            placeholder="Paste Figma selection or page link..."
+                            value={figmaUrlInput}
+                            onChange={(e) => setFigmaUrlInput(e.target.value)}
+                            className="flex-1 bg-foreground/[0.03] border border-border-medium rounded-xl px-3 py-2 text-[10px] focus:outline-none focus:border-indigo-500/50"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSyncFigma}
+                            disabled={!figmaUrlInput.trim()}
+                            className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-xl px-3 py-2 text-[10px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer select-none active:scale-[0.98]"
+                          >
+                            Sync Live
+                          </button>
+                        </>
+                      )}
                     </div>
                     <span className="text-[8px] text-text-dim leading-normal">
                       Select frame in Figma, right click ➔ <strong>Copy link to selection</strong>.
