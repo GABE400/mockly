@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   ReactFlow,
   useNodesState,
@@ -40,15 +40,25 @@ export const BACKGROUND_PRESETS = [
 ];
 
 export const DEVICE_FRAMES = [
-  { id: "iPhone 17 Pro", name: "iPhone 17 Pro" },
-  { id: "iPhone 16 Pro", name: "iPhone 16 Pro" },
-  { id: "iPhone 15 Pro", name: "iPhone 15 Pro" },
-  { id: "iPhone 14", name: "iPhone 14" },
-  { id: "iPhone 13", name: "iPhone 13" },
-  { id: "Google Pixel 9 Pro", name: "Google Pixel 9 Pro" },
-  { id: "Samsung Galaxy S24", name: "Samsung Galaxy S24" },
-  { id: "Sony Xperia 1 VI", name: "Sony Xperia 1 VI" },
+  // Desktop & Web
+  { id: "MacBook Pro", name: "MacBook Pro 16\"", category: "Desktop" },
+  { id: "Safari Browser", name: "Safari macOS Browser", category: "Desktop" },
+  { id: "Chrome Browser", name: "Google Chrome Window", category: "Desktop" },
+
+  // Smartphones
+  { id: "iPhone 17 Pro", name: "iPhone 17 Pro", category: "Mobile" },
+  { id: "iPhone 16 Pro", name: "iPhone 16 Pro", category: "Mobile" },
+  { id: "iPhone 15 Pro", name: "iPhone 15 Pro", category: "Mobile" },
+  { id: "iPhone 14", name: "iPhone 14", category: "Mobile" },
+  { id: "iPhone 13", name: "iPhone 13", category: "Mobile" },
+  { id: "Google Pixel 9 Pro", name: "Google Pixel 9 Pro", category: "Mobile" },
+  { id: "Samsung Galaxy S24", name: "Samsung Galaxy S24", category: "Mobile" },
+  { id: "Sony Xperia 1 VI", name: "Sony Xperia 1 VI", category: "Mobile" },
 ];
+
+export const isDesktopFrame = (frameId?: string | null) => {
+  return frameId === "MacBook Pro" || frameId === "Safari Browser" || frameId === "Chrome Browser";
+};
 
 export const FRAME_COLORS = [
   { id: "Dark", name: "Titanium Dark", hex: "#1e1e24" },
@@ -83,10 +93,55 @@ interface MockupBuilderProps {
   userRole?: "admin" | "user";
 }
 
+// Screen media renderer supporting Figma live embeds, static screenshots, or interactive empty states
+function MockupScreenMedia({
+  isEmbed,
+  embedUrl,
+  screenshotUrl,
+  interactive,
+}: {
+  isEmbed?: boolean;
+  embedUrl?: string;
+  screenshotUrl?: string;
+  interactive?: boolean;
+}) {
+  if (isEmbed && embedUrl) {
+    return (
+      <iframe
+        src={embedUrl}
+        title="Figma Live Embed"
+        className={`w-full h-full border-0 select-none z-10 bg-[#0c0d12] ${
+          interactive ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+        allowFullScreen
+      />
+    );
+  }
+  if (screenshotUrl) {
+    return (
+      <img
+        src={screenshotUrl}
+        alt="Screenshot Preview"
+        className="w-full h-full object-cover select-none pointer-events-none z-10"
+      />
+    );
+  }
+  return (
+    <div className="w-full h-full bg-[#0c0d12] flex flex-col items-center justify-center p-4 text-center gap-1.5 z-10">
+      <svg className="w-6 h-6 text-text-dim animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 00-1.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+      </svg>
+      <span className="text-[8px] font-bold text-text-dim uppercase tracking-wider">No Asset Uploaded</span>
+      <span className="text-[7px] text-text-dim leading-snug">Drag & drop screen in sidebar</span>
+    </div>
+  );
+}
+
 // React Flow Custom Node Renderer Component
 function CustomDeviceNode({ id, data, selected }: any) {
   const { updateNodeData } = useReactFlow();
   const activeColor = FRAME_COLORS.find((c) => c.id === data.frameColor) || FRAME_COLORS[0];
+  const isDesktop = isDesktopFrame(data.deviceFrame);
   
   let outerBezelBorder = "border-[#1e2029]";
   let middleBezelBg = "bg-[#0b0c10]";
@@ -152,23 +207,175 @@ function CustomDeviceNode({ id, data, selected }: any) {
       break;
   }
 
-  return (
-    <div 
-      className={`relative w-full h-full flex flex-col items-center justify-center select-none ${
-        selected ? "ring-2 ring-indigo-500 rounded-[38px] scale-102 shadow-[0_0_20px_rgba(99,102,241,0.35)]" : ""
-      }`}
-      style={{ transform: transform3DStyle }}
-    >
-      <NodeResizer 
-        color="#6366f1"
-        minWidth={100}
-        minHeight={212}
-        keepAspectRatio={true}
-        isVisible={selected}
-        handleStyle={{ width: 8, height: 8, borderRadius: 9999, backgroundColor: '#ffffff', border: '2px solid #6366f1' }}
-        lineStyle={{ border: '1.5px dashed #6366f1' }}
-      />
-      {/* Outer Titanium Layer (Double bezel rim) */}
+  const renderFrameBody = () => {
+    // 1. Safari Browser Window
+    if (data.deviceFrame === "Safari Browser") {
+      return (
+        <div className={`w-full h-full rounded-2xl border border-white/10 bg-[#161822] flex flex-col overflow-hidden relative ${shadowStyle}`}>
+          {/* Safari Top Window Bar */}
+          <div className="w-full h-8 bg-[#1f2230] border-b border-white/10 px-3 flex items-center justify-between z-30 select-none">
+            {/* macOS Traffic Lights */}
+            <div className="flex items-center gap-1.5 w-16">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f] border border-[#1aab29]" />
+            </div>
+            {/* Address bar pill */}
+            <div className="flex-1 max-w-[240px] mx-auto h-5 bg-black/30 border border-white/10 rounded-md px-2.5 flex items-center justify-center gap-1 text-[9px] text-text-dim">
+              <svg className="w-2.5 h-2.5 text-text-dim/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              <span className="truncate font-medium">mockly.app</span>
+            </div>
+            {/* Safari header icons */}
+            <div className="flex items-center justify-end gap-2 w-16 text-text-dim/60">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Viewport Screen Content */}
+          <div className="flex-1 relative w-full h-[calc(100%-32px)] bg-[#0c0d12] flex items-center justify-center overflow-hidden">
+            <MockupScreenMedia
+              isEmbed={data.isEmbed}
+              embedUrl={data.embedUrl}
+              screenshotUrl={data.screenshotUrl}
+              interactive={data.interactive}
+            />
+            {!data.interactive && (
+              <div 
+                className="absolute inset-0 pointer-events-none z-20 opacity-80"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 35%, rgba(255,255,255,0) 65%)"
+                }}
+              />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // 2. Google Chrome Window
+    if (data.deviceFrame === "Chrome Browser") {
+      return (
+        <div className={`w-full h-full rounded-2xl border border-white/10 bg-[#1e1f26] flex flex-col overflow-hidden relative ${shadowStyle}`}>
+          {/* Chrome Tab Bar */}
+          <div className="w-full h-7 bg-[#16171d] px-2.5 flex items-center gap-2 z-30 select-none">
+            <div className="flex items-center gap-1.5 mr-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f] border border-[#1aab29]" />
+            </div>
+            <div className="h-6 px-3 bg-[#1e1f26] rounded-t-lg flex items-center gap-1.5 text-[9px] text-foreground-pure border-t border-x border-white/10 max-w-[130px]">
+              <span className="w-2 h-2 rounded-full bg-indigo-500" />
+              <span className="truncate font-medium">Mockly</span>
+              <span className="text-[10px] text-text-dim hover:text-white ml-auto cursor-default">×</span>
+            </div>
+            <span className="text-text-dim text-xs font-light hover:text-white px-1 cursor-default">+</span>
+          </div>
+
+          {/* Chrome Omnibox Bar */}
+          <div className="w-full h-7 bg-[#1e1f26] border-b border-white/10 px-2.5 flex items-center gap-2 z-30">
+            <div className="flex items-center gap-1 text-text-dim">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+              <svg className="w-2.5 h-2.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+              <svg className="w-2.5 h-2.5 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            </div>
+            <div className="flex-1 h-5 bg-black/40 border border-white/5 rounded-full px-2.5 flex items-center gap-1 text-[9px] text-text-dim">
+              <svg className="w-2.5 h-2.5 text-text-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              <span className="truncate font-medium text-text-muted">https://mockly.app</span>
+            </div>
+          </div>
+
+          {/* Viewport Screen Content */}
+          <div className="flex-1 relative w-full h-[calc(100%-56px)] bg-[#0c0d12] flex items-center justify-center overflow-hidden">
+            <MockupScreenMedia
+              isEmbed={data.isEmbed}
+              embedUrl={data.embedUrl}
+              screenshotUrl={data.screenshotUrl}
+              interactive={data.interactive}
+            />
+            {!data.interactive && (
+              <div 
+                className="absolute inset-0 pointer-events-none z-20 opacity-80"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 35%, rgba(255,255,255,0) 65%)"
+                }}
+              />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // 3. MacBook Pro 16"
+    if (data.deviceFrame === "MacBook Pro") {
+      return (
+        <div className={`w-full h-full flex flex-col items-center select-none relative ${shadowStyle}`}>
+          {/* MacBook Display Lid */}
+          <div 
+            className={`w-full flex-1 rounded-t-[14px] rounded-b-[4px] border-[5px] bg-[#0c0d12] flex flex-col overflow-hidden relative ${outerBezelBorder} ${middleBezelBg} ${lightChamferClass}`}
+          >
+            {/* Top Display Notch Camera */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[34px] h-[9px] bg-[#000000] rounded-b-[5px] z-30 flex items-center justify-center">
+              <span 
+                className="w-1.5 h-1.5 rounded-full shadow-inner flex items-center justify-center"
+                style={{
+                  background: "radial-gradient(circle at 35% 35%, #2563eb 0%, #1e3a8a 50%, #030712 100%)",
+                  opacity: 0.9
+                }}
+              >
+                <span className="w-0.5 h-0.5 rounded-full bg-white/50 absolute top-0.5 left-0.5" />
+              </span>
+            </div>
+
+            {/* Screen Content */}
+            <div className="w-full h-full relative rounded-[3px] overflow-hidden bg-[#0c0d12] flex items-center justify-center">
+              <MockupScreenMedia
+                isEmbed={data.isEmbed}
+                embedUrl={data.embedUrl}
+                screenshotUrl={data.screenshotUrl}
+                interactive={data.interactive}
+              />
+              {!data.interactive && (
+                <div 
+                  className="absolute inset-0 pointer-events-none z-20 opacity-80"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 32%, rgba(255,255,255,0) 65%)"
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* MacBook Pro Aluminum Lower Lip */}
+          <div 
+            className="w-[104%] -mx-[2%] h-[12px] rounded-b-[8px] flex items-start justify-center relative shadow-sm border-t border-black/40"
+            style={{
+              backgroundColor: activeColor.hex,
+              backgroundImage: "linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(0,0,0,0.2))",
+            }}
+          >
+            <div className="w-[52px] h-[3.5px] bg-[#090a0f] rounded-b-sm mx-auto shadow-inner" />
+          </div>
+        </div>
+      );
+    }
+
+    // 4. Mobile Frames (iPhone 17 Pro, iPhone 16 Pro, iPhone 15 Pro, iPhone 14/13, Pixel, Galaxy, Xperia)
+    return (
       <div 
         className={`w-full h-full rounded-[38px] border-[8px] bg-[#0c0d12] flex flex-col overflow-hidden relative ${outerBezelBorder} ${middleBezelBg} ${lightChamferClass} ${shadowStyle}`}
       >
@@ -238,32 +445,12 @@ function CustomDeviceNode({ id, data, selected }: any) {
         {/* Inner Glass Bezel & Screen Wrapper */}
         <div className="w-full h-full rounded-[29px] bg-black p-[3.5px] overflow-hidden flex relative">
           <div className="w-full h-full relative rounded-[25px] overflow-hidden bg-[#0c0d12] flex items-center justify-center">
-            {data.isEmbed && data.embedUrl ? (
-              <iframe
-                src={data.embedUrl}
-                title="Figma Live Embed"
-                className={`w-full h-full border-0 select-none z-10 bg-[#0c0d12] ${
-                  data.interactive ? "pointer-events-auto" : "pointer-events-none"
-                }`}
-                allowFullScreen
-              />
-            ) : data.screenshotUrl ? (
-              <img 
-                src={data.screenshotUrl} 
-                alt="Screenshot Preview" 
-                className="w-full h-full object-cover select-none pointer-events-none z-10" 
-              />
-            ) : (
-              <div className="w-full h-full bg-[#0c0d12] flex flex-col items-center justify-center p-4 text-center gap-1.5 z-10">
-                <svg className="w-6 h-6 text-text-dim animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 00-1.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                </svg>
-                <span className="text-[8px] font-bold text-text-dim uppercase tracking-wider">No Asset Uploaded</span>
-                <span className="text-[7px] text-text-dim leading-snug">Drag & drop screen in sidebar</span>
-              </div>
-            )}
-
-            {/* Premium Dynamic Glass Glare Overlay - only show when not interacting so glare doesn't block the prototype */}
+            <MockupScreenMedia
+              isEmbed={data.isEmbed}
+              embedUrl={data.embedUrl}
+              screenshotUrl={data.screenshotUrl}
+              interactive={data.interactive}
+            />
             {!data.interactive && (
               <div 
                 className="absolute inset-0 pointer-events-none z-20 opacity-85"
@@ -274,8 +461,28 @@ function CustomDeviceNode({ id, data, selected }: any) {
             )}
           </div>
         </div>
-
       </div>
+    );
+  };
+
+  return (
+    <div 
+      className={`relative w-full h-full flex flex-col items-center justify-center select-none ${
+        selected ? (isDesktop ? "ring-2 ring-indigo-500 rounded-2xl scale-102 shadow-[0_0_20px_rgba(99,102,241,0.35)]" : "ring-2 ring-indigo-500 rounded-[38px] scale-102 shadow-[0_0_20px_rgba(99,102,241,0.35)]") : ""
+      }`}
+      style={{ transform: transform3DStyle }}
+    >
+      <NodeResizer 
+        color="#6366f1"
+        minWidth={isDesktop ? 220 : 100}
+        minHeight={isDesktop ? 140 : 212}
+        keepAspectRatio={true}
+        isVisible={selected}
+        handleStyle={{ width: 8, height: 8, borderRadius: 9999, backgroundColor: '#ffffff', border: '2px solid #6366f1' }}
+        lineStyle={{ border: '1.5px dashed #6366f1' }}
+      />
+      
+      {renderFrameBody()}
 
       {selected && (
         <div className="absolute -top-3 -right-3 flex gap-1.5 z-50">
@@ -334,6 +541,7 @@ function StaticDeviceMockup({ node, shadowIntensity }: { node: any; shadowIntens
   const deviceFrame = data.deviceFrame || node.deviceFrame || "iPhone 17 Pro";
   const tilt = data.tilt || node.tilt || "Flat";
   const screenshotUrl = data.screenshotUrl || node.screenshotUrl;
+  const isDesktop = isDesktopFrame(deviceFrame);
 
   const activeColor = FRAME_COLORS.find((c) => c.id === frameColor) || FRAME_COLORS[0];
   
@@ -401,19 +609,126 @@ function StaticDeviceMockup({ node, shadowIntensity }: { node: any; shadowIntens
       break;
   }
 
-  const width = node.width || 172;
-  const height = node.height || 364;
+  const width = node.width || (isDesktop ? 480 : 172);
+  const height = node.height || (deviceFrame === "MacBook Pro" ? 320 : isDesktop ? 310 : 364);
 
-  return (
-    <div 
-      className="relative flex flex-col items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none"
-      style={{ 
-        transform: transform3DStyle,
-        width: `${width}px`,
-        height: `${height}px`
-      }}
-    >
-      {/* Outer Titanium Layer (Double bezel rim) */}
+  const renderStaticScreen = () => {
+    if (screenshotUrl) {
+      return (
+        <img 
+          src={screenshotUrl} 
+          alt="Screenshot Preview" 
+          className="w-full h-full object-cover select-none pointer-events-none z-10" 
+        />
+      );
+    }
+    return (
+      <div className="w-full h-full bg-[#0c0d12] flex flex-col items-center justify-center p-4 text-center gap-1.5 z-10">
+        <svg className="w-6 h-6 text-text-dim animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 00-1.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+        </svg>
+        <span className="text-[8px] font-bold text-text-dim uppercase tracking-wider">No Asset</span>
+      </div>
+    );
+  };
+
+  const renderStaticFrameBody = () => {
+    // 1. Safari Browser
+    if (deviceFrame === "Safari Browser") {
+      return (
+        <div className={`w-full h-full rounded-2xl border border-white/10 bg-[#161822] flex flex-col overflow-hidden relative ${shadowStyle}`}>
+          <div className="w-full h-8 bg-[#1f2230] border-b border-white/10 px-3 flex items-center justify-between z-30 select-none">
+            <div className="flex items-center gap-1.5 w-16">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f] border border-[#1aab29]" />
+            </div>
+            <div className="flex-1 max-w-[240px] mx-auto h-5 bg-black/30 border border-white/10 rounded-md px-2.5 flex items-center justify-center gap-1 text-[9px] text-text-dim">
+              <span className="truncate font-medium">mockly.app</span>
+            </div>
+            <div className="w-16" />
+          </div>
+          <div className="flex-1 relative w-full h-[calc(100%-32px)] bg-[#0c0d12] flex items-center justify-center overflow-hidden">
+            {renderStaticScreen()}
+            <div 
+              className="absolute inset-0 pointer-events-none z-20 opacity-80"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 35%, rgba(255,255,255,0) 65%)"
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // 2. Chrome Browser
+    if (deviceFrame === "Chrome Browser") {
+      return (
+        <div className={`w-full h-full rounded-2xl border border-white/10 bg-[#1e1f26] flex flex-col overflow-hidden relative ${shadowStyle}`}>
+          <div className="w-full h-7 bg-[#16171d] px-2.5 flex items-center gap-2 z-30 select-none">
+            <div className="flex items-center gap-1.5 mr-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f] border border-[#1aab29]" />
+            </div>
+            <div className="h-6 px-3 bg-[#1e1f26] rounded-t-lg flex items-center gap-1.5 text-[9px] text-foreground-pure border-t border-x border-white/10 max-w-[130px]">
+              <span className="w-2 h-2 rounded-full bg-indigo-500" />
+              <span className="truncate font-medium">Mockly</span>
+            </div>
+          </div>
+          <div className="w-full h-7 bg-[#1e1f26] border-b border-white/10 px-2.5 flex items-center gap-2 z-30">
+            <div className="flex-1 h-5 bg-black/40 border border-white/5 rounded-full px-2.5 flex items-center gap-1 text-[9px] text-text-dim">
+              <span className="truncate font-medium text-text-muted">https://mockly.app</span>
+            </div>
+          </div>
+          <div className="flex-1 relative w-full h-[calc(100%-56px)] bg-[#0c0d12] flex items-center justify-center overflow-hidden">
+            {renderStaticScreen()}
+            <div 
+              className="absolute inset-0 pointer-events-none z-20 opacity-80"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 35%, rgba(255,255,255,0) 65%)"
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // 3. MacBook Pro
+    if (deviceFrame === "MacBook Pro") {
+      return (
+        <div className={`w-full h-full flex flex-col items-center select-none relative ${shadowStyle}`}>
+          <div 
+            className={`w-full flex-1 rounded-t-[14px] rounded-b-[4px] border-[5px] bg-[#0c0d12] flex flex-col overflow-hidden relative ${outerBezelBorder} ${middleBezelBg} ${lightChamferClass}`}
+          >
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[34px] h-[9px] bg-[#000000] rounded-b-[5px] z-30 flex items-center justify-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-900" />
+            </div>
+            <div className="w-full h-full relative rounded-[3px] overflow-hidden bg-[#0c0d12] flex items-center justify-center">
+              {renderStaticScreen()}
+              <div 
+                className="absolute inset-0 pointer-events-none z-20 opacity-80"
+                style={{
+                  background: "linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 32%, rgba(255,255,255,0) 65%)"
+                }}
+              />
+            </div>
+          </div>
+          <div 
+            className="w-[104%] -mx-[2%] h-[12px] rounded-b-[8px] flex items-start justify-center relative shadow-sm border-t border-black/40"
+            style={{
+              backgroundColor: activeColor.hex,
+              backgroundImage: "linear-gradient(to bottom, rgba(255,255,255,0.12), rgba(0,0,0,0.2))",
+            }}
+          >
+            <div className="w-[52px] h-[3.5px] bg-[#090a0f] rounded-b-sm mx-auto shadow-inner" />
+          </div>
+        </div>
+      );
+    }
+
+    // 4. Mobile Frames
+    return (
       <div 
         className={`w-full h-full rounded-[38px] border-[8px] bg-[#0c0d12] flex flex-col overflow-hidden relative ${outerBezelBorder} ${middleBezelBg} ${lightChamferClass} ${shadowStyle}`}
       >
@@ -434,7 +749,6 @@ function StaticDeviceMockup({ node, shadowIntensity }: { node: any; shadowIntens
         {/* Notch dynamic layouts with glass lens reflections */}
         {(deviceFrame === "iPhone 17 Pro" || deviceFrame === "iPhone 16 Pro" || deviceFrame === "iPhone 15 Pro") && (
           <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[42%] h-[15px] bg-[#090a0f] border border-white/5 rounded-full z-30 flex items-center justify-center">
-            {/* Camera Lens Reflection */}
             <span 
               className="w-1.5 h-1.5 rounded-full absolute right-[25%] shadow-inner flex items-center justify-center" 
               style={{
@@ -444,7 +758,6 @@ function StaticDeviceMockup({ node, shadowIntensity }: { node: any; shadowIntens
             >
               <span className="w-0.5 h-0.5 rounded-full bg-white/40 absolute top-0.5 left-0.5" />
             </span>
-            {/* Sensor Dot */}
             <span className="w-1 h-1 rounded-full bg-[#1e2030] absolute left-[30%] opacity-40" />
           </div>
         )}
@@ -483,22 +796,7 @@ function StaticDeviceMockup({ node, shadowIntensity }: { node: any; shadowIntens
         {/* Inner Glass Bezel & Screen Wrapper */}
         <div className="w-full h-full rounded-[29px] bg-black p-[3.5px] overflow-hidden flex relative">
           <div className="w-full h-full relative rounded-[25px] overflow-hidden bg-[#0c0d12] flex items-center justify-center">
-            {screenshotUrl ? (
-              <img 
-                src={screenshotUrl} 
-                alt="Screenshot Preview" 
-                className="w-full h-full object-cover select-none pointer-events-none z-10" 
-              />
-            ) : (
-              <div className="w-full h-full bg-[#0c0d12] flex flex-col items-center justify-center p-4 text-center gap-1.5 z-10">
-                <svg className="w-6 h-6 text-text-dim animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 00-1.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                </svg>
-                <span className="text-[8px] font-bold text-text-dim uppercase tracking-wider">No Asset</span>
-              </div>
-            )}
-
-            {/* Premium Dynamic Glass Glare Overlay */}
+            {renderStaticScreen()}
             <div 
               className="absolute inset-0 pointer-events-none z-20 opacity-85"
               style={{
@@ -507,8 +805,20 @@ function StaticDeviceMockup({ node, shadowIntensity }: { node: any; shadowIntens
             />
           </div>
         </div>
-
       </div>
+    );
+  };
+
+  return (
+    <div 
+      className="relative flex flex-col items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] select-none"
+      style={{ 
+        transform: transform3DStyle,
+        width: `${width}px`,
+        height: `${height}px`
+      }}
+    >
+      {renderStaticFrameBody()}
     </div>
   );
 }
@@ -563,6 +873,25 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     nodes: Node[];
   }
 
+  interface CanvasSnapshot {
+    nodes: Node[];
+    selectedBg: string;
+    customBgColor: string;
+    shadowIntensity: "None" | "Soft" | "Dramatic";
+    paddingLevel: "Compact" | "Standard" | "Spacious";
+    textOverlay: string;
+    textPosition: "Top" | "Bottom";
+    textFontSize: number;
+    textColor: string;
+    textWeight: "normal" | "medium" | "bold" | "extrabold";
+  }
+
+  // History Stacks for Active Board (Undo / Redo)
+  const pastRef = useRef<CanvasSnapshot[]>([]);
+  const futureRef = useRef<CanvasSnapshot[]>([]);
+  const [canUndo, setCanUndo] = useState<boolean>(false);
+  const [canRedo, setCanRedo] = useState<boolean>(false);
+
   // Multi-Board stacking presentation slides state
   const [boards, setBoards] = useState<Board[]>([]);
   const [activeBoardId, setActiveBoardId] = useState<string>("");
@@ -582,6 +911,11 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     setGridVisible(board.gridVisible !== undefined ? board.gridVisible : true);
     setGridVariant(board.gridVariant || "dots");
     setNodes(board.nodes || []);
+    // Reset undo/redo history for newly focused board
+    pastRef.current = [];
+    futureRef.current = [];
+    setCanUndo(false);
+    setCanRedo(false);
   };
 
   // Load saved workspace state from localStorage on mount
@@ -744,10 +1078,10 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   };
 
   // Toast Notifications
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const showToast = (message: string, type: "success" | "error") => {
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }
@@ -899,6 +1233,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
   // Export & Quota States
   const [isExporting, setIsExporting] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [usageCount, setUsageCount] = useState(initialUsage);
   const [mockupsList, setMockupsList] = useState<MockupRecord[]>(initialMockups);
@@ -1112,6 +1447,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         // Detect screenshot dimensions to match aspect ratio
         let calculatedWidth = 172;
         let calculatedHeight = 364; // Default fallback if measurement fails
+        let detectedDeviceFrame = "iPhone 17 Pro";
 
         try {
           const img = new Image();
@@ -1122,7 +1458,16 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           });
           if (img.width && img.height) {
             const aspect = img.width / img.height;
-            calculatedHeight = Math.round(calculatedWidth / aspect);
+            if (aspect >= 1.2) {
+              detectedDeviceFrame = "Safari Browser";
+              calculatedWidth = 480;
+              calculatedHeight = Math.round(calculatedWidth / aspect);
+              if (calculatedHeight < 280) calculatedHeight = 280;
+              if (calculatedHeight > 340) calculatedHeight = 340;
+            } else {
+              calculatedWidth = 172;
+              calculatedHeight = Math.round(calculatedWidth / aspect);
+            }
           }
         } catch (e) {
           console.error("Failed to pre-calculate image aspect ratio:", e);
@@ -1140,10 +1485,11 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `Failed to upload "${file.name}".`);
 
-        // Arrange new custom device mockup nodes side-by-side with 220px offset
+        // Arrange new custom device mockup nodes side-by-side with appropriate offset
         const nodeIndex = currentCount + i;
-        const xPos = 200 + (nodeIndex * 220) % (1200 - 172 - 100); 
-        const yPos = 120 + Math.floor((nodeIndex * 220) / (1200 - 172 - 100)) * 60;
+        const xOffset = detectedDeviceFrame === "Safari Browser" ? 500 : 220;
+        const xPos = 160 + (nodeIndex * xOffset) % (1200 - calculatedWidth - 40); 
+        const yPos = 120 + Math.floor((nodeIndex * xOffset) / (1200 - calculatedWidth - 40)) * 60;
 
         const spawnedNode: Node = {
           id: `node-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 7)}`,
@@ -1156,7 +1502,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           height: calculatedHeight,
           data: {
             screenshotUrl: data.url,
-            deviceFrame: DEVICE_FRAMES[0].id,
+            deviceFrame: detectedDeviceFrame,
             frameColor: FRAME_COLORS[0].id,
             tilt: ANGLES[0].id,
           },
@@ -1168,6 +1514,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
       const spawnedNodes = await Promise.all(uploadPromises);
 
       // Add to state and set selected states correctly
+      takeSnapshot();
       setNodes((nds) => {
         const updatedExisting = nds.map((n) => ({ ...n, selected: false }));
         return [...updatedExisting, ...spawnedNodes] as Node[];
@@ -1266,7 +1613,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           isEmbed: true,
           embedUrl,
           interactive: false,
-          deviceFrame: DEVICE_FRAMES[0].id,
+          deviceFrame: "iPhone 17 Pro",
           frameColor: FRAME_COLORS[0].id,
           tilt: ANGLES[0].id,
           onDelete: handleDeleteNode,
@@ -1277,6 +1624,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
       newNodesList.push(spawnedNode);
     }
 
+    takeSnapshot();
     setNodes((nds) => {
       const updatedExisting = nds.map((n) => ({ ...n, selected: false }));
       return [...updatedExisting, ...newNodesList] as Node[];
@@ -1334,6 +1682,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         // Detect dimensions for this specific screen
         let calculatedWidth = 172;
         let calculatedHeight = 364; // Default fallback
+        let detectedDeviceFrame = "iPhone 17 Pro";
 
         try {
           const img = new Image();
@@ -1344,16 +1693,25 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           });
           if (img.width && img.height) {
             const aspect = img.width / img.height;
-            calculatedHeight = Math.round(calculatedWidth / aspect);
+            if (aspect >= 1.2) {
+              detectedDeviceFrame = "Safari Browser";
+              calculatedWidth = 480;
+              calculatedHeight = Math.round(calculatedWidth / aspect);
+              if (calculatedHeight < 280) calculatedHeight = 280;
+              if (calculatedHeight > 340) calculatedHeight = 340;
+            } else {
+              calculatedWidth = 172;
+              calculatedHeight = Math.round(calculatedWidth / aspect);
+            }
           }
         } catch (e) {
           console.error("Failed to pre-calculate image aspect ratio:", e);
         }
 
         const nodeIndex = currentCount + idx;
-        // Arrange side-by-side cleanly in horizontal row(s) with 260px gap offset
-        const xPos = 200 + (nodeIndex * 260) % (1200 - 172 - 100);
-        const yPos = 120 + Math.floor((nodeIndex * 260) / (1200 - 172 - 100)) * 420;
+        const xOffset = detectedDeviceFrame === "Safari Browser" ? 500 : 260;
+        const xPos = 160 + (nodeIndex * xOffset) % (1200 - calculatedWidth - 40);
+        const yPos = 120 + Math.floor((nodeIndex * xOffset) / (1200 - calculatedWidth - 40)) * 420;
 
         const spawnedNode: Node = {
           id: `node-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
@@ -1366,7 +1724,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           height: calculatedHeight,
           data: {
             screenshotUrl: screen.url,
-            deviceFrame: DEVICE_FRAMES[0].id,
+            deviceFrame: detectedDeviceFrame,
             frameColor: FRAME_COLORS[0].id,
             tilt: ANGLES[0].id,
           },
@@ -1376,6 +1734,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         newNodesList.push(spawnedNode);
       }
 
+      takeSnapshot();
       setNodes((nds) => {
         const updatedExisting = nds.map((n) => ({ ...n, selected: false }));
         return [...updatedExisting, ...newNodesList] as Node[];
@@ -1473,6 +1832,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         // Detect screenshot dimensions to match aspect ratio
         let calculatedWidth = 172;
         let calculatedHeight = 364; // Default fallback if measurement fails
+        let detectedDeviceFrame = "iPhone 17 Pro";
 
         try {
           const img = new Image();
@@ -1483,7 +1843,16 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           });
           if (img.width && img.height) {
             const aspect = img.width / img.height;
-            calculatedHeight = Math.round(calculatedWidth / aspect);
+            if (aspect >= 1.2) {
+              detectedDeviceFrame = "Safari Browser";
+              calculatedWidth = 480;
+              calculatedHeight = Math.round(calculatedWidth / aspect);
+              if (calculatedHeight < 280) calculatedHeight = 280;
+              if (calculatedHeight > 340) calculatedHeight = 340;
+            } else {
+              calculatedWidth = 172;
+              calculatedHeight = Math.round(calculatedWidth / aspect);
+            }
           }
         } catch (e) {
           console.error("Failed to pre-calculate image aspect ratio:", e);
@@ -1502,8 +1871,9 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         if (!res.ok) throw new Error(data.error || `Failed to upload "${file.name}".`);
 
         const nodeIndex = currentCount + i;
-        const xPos = 200 + (nodeIndex * 220) % (1200 - 172 - 100); 
-        const yPos = 120 + Math.floor((nodeIndex * 220) / (1200 - 172 - 100)) * 60;
+        const xOffset = detectedDeviceFrame === "Safari Browser" ? 500 : 220;
+        const xPos = 160 + (nodeIndex * xOffset) % (1200 - calculatedWidth - 40); 
+        const yPos = 120 + Math.floor((nodeIndex * xOffset) / (1200 - calculatedWidth - 40)) * 60;
 
         const spawnedNode: Node = {
           id: `node-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 7)}`,
@@ -1516,7 +1886,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
           height: calculatedHeight,
           data: {
             screenshotUrl: data.url,
-            deviceFrame: DEVICE_FRAMES[0].id,
+            deviceFrame: detectedDeviceFrame,
             frameColor: FRAME_COLORS[0].id,
             tilt: ANGLES[0].id,
           },
@@ -1559,6 +1929,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   };
 
   const deleteNode = (id: string) => {
+    takeSnapshot();
     setNodes((nds) => nds.filter((n) => n.id !== id));
     showToast("Screen removed from workspace.", "success");
   };
@@ -1566,11 +1937,39 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   // Settings modification updates data properties of the highlighted node
   const updateSelectedNode = (field: "deviceFrame" | "frameColor" | "tilt", value: string) => {
     if (!selectedNode) return;
+    takeSnapshot();
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === selectedNode.id) {
+          let updatedWidth = node.width;
+          let updatedHeight = node.height;
+
+          if (field === "deviceFrame") {
+            const wasDesktop = isDesktopFrame(node.data?.deviceFrame as string | undefined);
+            const isNowDesktop = isDesktopFrame(value);
+
+            if (!wasDesktop && isNowDesktop) {
+              // Switched from mobile to desktop
+              updatedWidth = 480;
+              updatedHeight = value === "MacBook Pro" ? 320 : 310;
+            } else if (wasDesktop && !isNowDesktop) {
+              // Switched from desktop to mobile
+              updatedWidth = 172;
+              updatedHeight = 364;
+            } else if (wasDesktop && isNowDesktop) {
+              // Switching between desktop models (e.g. MacBook Pro vs Safari)
+              if (value === "MacBook Pro" && node.data?.deviceFrame !== "MacBook Pro") {
+                updatedHeight = Math.round((Number(updatedHeight) || 310) * (320 / 310));
+              } else if (value !== "MacBook Pro" && node.data?.deviceFrame === "MacBook Pro") {
+                updatedHeight = Math.round((Number(updatedHeight) || 320) * (310 / 320));
+              }
+            }
+          }
+
           return {
             ...node,
+            width: updatedWidth,
+            height: updatedHeight,
             data: {
               ...node.data,
               [field]: value,
@@ -1585,6 +1984,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   // Bring selected node to the absolute front of the stack
   const bringToFront = () => {
     if (!selectedNode) return;
+    takeSnapshot();
     const maxZ = nodes.reduce((max, node) => {
       const z = Number(node.data?.customZIndex) || 0;
       return z > max ? z : max;
@@ -1610,6 +2010,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
   // Send selected node to the absolute back of the stack
   const sendToBack = () => {
     if (!selectedNode) return;
+    takeSnapshot();
     const minZ = nodes.reduce((min, node) => {
       const z = Number(node.data?.customZIndex) || 0;
       return z < min ? z : min;
@@ -1834,6 +2235,405 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     }
   };
 
+  // --- CANVAS HISTORY ENGINE (UNDO / REDO) ---
+  const getCurrentSnapshot = useCallback((): CanvasSnapshot => ({
+    nodes: JSON.parse(JSON.stringify(nodes)),
+    selectedBg,
+    customBgColor,
+    shadowIntensity,
+    paddingLevel,
+    textOverlay,
+    textPosition,
+    textFontSize,
+    textColor,
+    textWeight,
+  }), [nodes, selectedBg, customBgColor, shadowIntensity, paddingLevel, textOverlay, textPosition, textFontSize, textColor, textWeight]);
+
+  const takeSnapshot = useCallback(() => {
+    const current = getCurrentSnapshot();
+    pastRef.current = [...pastRef.current.slice(-24), current];
+    futureRef.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }, [getCurrentSnapshot]);
+
+  const applySnapshot = (snapshot: CanvasSnapshot) => {
+    setNodes(snapshot.nodes);
+    setSelectedBg(snapshot.selectedBg);
+    setCustomBgColor(snapshot.customBgColor);
+    setShadowIntensity(snapshot.shadowIntensity);
+    setPaddingLevel(snapshot.paddingLevel);
+    setTextOverlay(snapshot.textOverlay);
+    setTextPosition(snapshot.textPosition);
+    setTextFontSize(snapshot.textFontSize);
+    setTextColor(snapshot.textColor);
+    setTextWeight(snapshot.textWeight);
+  };
+
+  const handleUndo = useCallback(() => {
+    if (pastRef.current.length === 0) return;
+    const previous = pastRef.current[pastRef.current.length - 1];
+    pastRef.current = pastRef.current.slice(0, -1);
+    futureRef.current = [getCurrentSnapshot(), ...futureRef.current.slice(0, 24)];
+    applySnapshot(previous);
+    setCanUndo(pastRef.current.length > 0);
+    setCanRedo(true);
+    showToast("Undo", "info");
+  }, [getCurrentSnapshot]);
+
+  const handleRedo = useCallback(() => {
+    if (futureRef.current.length === 0) return;
+    const next = futureRef.current[0];
+    futureRef.current = futureRef.current.slice(1);
+    pastRef.current = [...pastRef.current.slice(-24), getCurrentSnapshot()];
+    applySnapshot(next);
+    setCanUndo(true);
+    setCanRedo(futureRef.current.length > 0);
+    showToast("Redo", "info");
+  }, [getCurrentSnapshot]);
+
+  // Global Keyboard Shortcuts (Ctrl+Z / Ctrl+Y / Cmd+Z / Cmd+Shift+Z)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (
+        activeTag === "input" ||
+        activeTag === "textarea" ||
+        (document.activeElement as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+
+      const modifier = e.metaKey || e.ctrlKey;
+      if (modifier && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if (
+        (modifier && e.key.toLowerCase() === "y") ||
+        (modifier && e.shiftKey && e.key.toLowerCase() === "z")
+      ) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
+  // --- SMART ALIGNMENT & DISTRIBUTION TOOLS ---
+  const getSelectedOrAllNodes = () => {
+    const selectedNodes = nodes.filter((n) => n.selected);
+    return selectedNodes.length > 1 ? selectedNodes : nodes;
+  };
+
+  const alignCenterH = () => {
+    if (nodes.length === 0) return;
+    takeSnapshot();
+    const targets = getSelectedOrAllNodes();
+    const targetIds = new Set(targets.map((n) => n.id));
+
+    if (targets.length === 1) {
+      const node = targets[0];
+      const w = node.width || 172;
+      const centeredX = Math.round((1200 - w) / 2);
+      setNodes((nds) => nds.map((n) => (n.id === node.id ? { ...n, position: { ...n.position, x: centeredX } } : n)));
+      showToast("Centered horizontally", "info");
+      return;
+    }
+
+    const minX = Math.min(...targets.map((n) => n.position.x));
+    const maxX = Math.max(...targets.map((n) => n.position.x + (n.width || 172)));
+    const boundingWidth = maxX - minX;
+    const targetCenter = (1200 - boundingWidth) / 2;
+    const shift = Math.round(targetCenter - minX);
+
+    setNodes((nds) =>
+      nds.map((n) => (targetIds.has(n.id) ? { ...n, position: { ...n.position, x: n.position.x + shift } } : n))
+    );
+    showToast("Aligned center horizontally", "info");
+  };
+
+  const alignCenterV = () => {
+    if (nodes.length === 0) return;
+    takeSnapshot();
+    const targets = getSelectedOrAllNodes();
+    const targetIds = new Set(targets.map((n) => n.id));
+
+    if (targets.length === 1) {
+      const node = targets[0];
+      const h = node.height || 364;
+      const centeredY = Math.round((675 - h) / 2);
+      setNodes((nds) => nds.map((n) => (n.id === node.id ? { ...n, position: { ...n.position, y: centeredY } } : n)));
+      showToast("Centered vertically", "info");
+      return;
+    }
+
+    const minY = Math.min(...targets.map((n) => n.position.y));
+    const maxY = Math.max(...targets.map((n) => n.position.y + (n.height || 364)));
+    const boundingHeight = maxY - minY;
+    const targetCenter = (675 - boundingHeight) / 2;
+    const shift = Math.round(targetCenter - minY);
+
+    setNodes((nds) =>
+      nds.map((n) => (targetIds.has(n.id) ? { ...n, position: { ...n.position, y: n.position.y + shift } } : n))
+    );
+    showToast("Aligned center vertically", "info");
+  };
+
+  const alignTops = () => {
+    const targets = getSelectedOrAllNodes();
+    if (targets.length < 2) return;
+    takeSnapshot();
+    const targetIds = new Set(targets.map((n) => n.id));
+    const minY = Math.min(...targets.map((n) => n.position.y));
+
+    setNodes((nds) =>
+      nds.map((n) => (targetIds.has(n.id) ? { ...n, position: { ...n.position, y: minY } } : n))
+    );
+    showToast("Aligned top edges", "info");
+  };
+
+  const alignBottoms = () => {
+    const targets = getSelectedOrAllNodes();
+    if (targets.length < 2) return;
+    takeSnapshot();
+    const targetIds = new Set(targets.map((n) => n.id));
+    const maxBottom = Math.max(...targets.map((n) => n.position.y + (n.height || 364)));
+
+    setNodes((nds) =>
+      nds.map((n) =>
+        targetIds.has(n.id)
+          ? { ...n, position: { ...n.position, y: maxBottom - (n.height || 364) } }
+          : n
+      )
+    );
+    showToast("Aligned bottom edges", "info");
+  };
+
+  const distributeEvenly = () => {
+    const targets = getSelectedOrAllNodes();
+    if (targets.length < 2) return;
+    takeSnapshot();
+
+    const sorted = [...targets].sort((a, b) => a.position.x - b.position.x);
+    const count = sorted.length;
+    const totalWidth = sorted.reduce((sum, n) => sum + (n.width || 172), 0);
+
+    const maxClusterWidth = Math.min(1050, 1200 - 80);
+    const availableGapSpace = maxClusterWidth - totalWidth;
+    const gap = Math.max(24, Math.min(60, Math.floor(availableGapSpace / (count - 1))));
+    const clusterWidth = totalWidth + (count - 1) * gap;
+    const startX = Math.max(30, Math.round((1200 - clusterWidth) / 2));
+
+    const newPositions = new Map<string, number>();
+    let currX = startX;
+    for (const node of sorted) {
+      newPositions.set(node.id, currX);
+      currX += (node.width || 172) + gap;
+    }
+
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (newPositions.has(n.id)) {
+          return { ...n, position: { ...n.position, x: newPositions.get(n.id)! } };
+        }
+        return n;
+      })
+    );
+    showToast("Distributed evenly across canvas", "info");
+  };
+
+  const autoCascade = () => {
+    if (nodes.length === 0) return;
+    takeSnapshot();
+
+    if (nodes.length === 1) {
+      setNodes((nds) => [
+        {
+          ...nds[0],
+          position: {
+            x: Math.round((1200 - (nds[0].width || 172)) / 2),
+            y: Math.round((675 - (nds[0].height || 364)) / 2),
+          },
+          data: { ...nds[0].data, tilt: "Floating" },
+        },
+      ]);
+      showToast("Preset: Hero Centered", "success");
+      return;
+    }
+
+    if (nodes.length === 2) {
+      setNodes((nds) => [
+        {
+          ...nds[0],
+          position: { x: 380, y: 155 },
+          data: { ...nds[0].data, tilt: "Left Tilt", customZIndex: 1 },
+        },
+        {
+          ...nds[1],
+          position: { x: 580, y: 155 },
+          data: { ...nds[1].data, tilt: "Right Tilt", customZIndex: 2 },
+        },
+      ]);
+      showToast("Preset: Isometric Duo", "success");
+      return;
+    }
+
+    if (nodes.length === 3) {
+      setNodes((nds) => [
+        {
+          ...nds[0],
+          position: { x: 260, y: 170 },
+          data: { ...nds[0].data, tilt: "Left Tilt", customZIndex: 1 },
+        },
+        {
+          ...nds[1],
+          position: { x: 480, y: 135 },
+          data: { ...nds[1].data, tilt: "Floating", customZIndex: 5 },
+        },
+        {
+          ...nds[2],
+          position: { x: 700, y: 170 },
+          data: { ...nds[2].data, tilt: "Right Tilt", customZIndex: 1 },
+        },
+      ]);
+      showToast("Preset: Hero Launch Trio", "success");
+      return;
+    }
+
+    const count = nodes.length;
+    const stepX = Math.min(180, Math.floor(800 / (count - 1)));
+    const startX = Math.round((1200 - (stepX * (count - 1) + 172)) / 2);
+    setNodes((nds) =>
+      nds.map((node, idx) => ({
+        ...node,
+        position: {
+          x: startX + idx * stepX,
+          y: 155 + (idx % 2 === 0 ? 0 : 25),
+        },
+        data: {
+          ...node.data,
+          tilt: idx === 0 ? "Left Tilt" : idx === count - 1 ? "Right Tilt" : "Floating",
+          customZIndex: idx + 1,
+        },
+      }))
+    );
+    showToast(`Preset: ${count}-Device Cascade`, "success");
+  };
+
+  // --- ONE-CLICK COPY IMAGE TO CLIPBOARD ---
+  const handleCopyToClipboard = async (boardToExport?: Board) => {
+    const targetBoard = boardToExport || {
+      title,
+      selectedBg,
+      customBgColor,
+      shadowIntensity,
+      paddingLevel,
+      textOverlay,
+      textPosition,
+      textFontSize,
+      textColor,
+      textWeight,
+      nodes,
+    };
+
+    if (targetBoard.nodes.length === 0) {
+      showToast(`Please upload at least one screenshot to "${targetBoard.title}" first!`, "error");
+      return;
+    }
+
+    const hasLiveEmbed = targetBoard.nodes.some(
+      (n) => Boolean((n as any).isEmbed || n.data?.isEmbed) && !((n as any).screenshotUrl || n.data?.screenshotUrl)
+    );
+    if (hasLiveEmbed) {
+      showToast('Live Figma embeds cannot be directly exported as static PNGs. Please click "Sync as Image" in the Figma tab or upload a static screenshot before copying.', "error");
+      return;
+    }
+
+    const hasAnyScreenshot = targetBoard.nodes.some(
+      (n) => Boolean((n as any).screenshotUrl || n.data?.screenshotUrl)
+    );
+    if (!hasAnyScreenshot) {
+      showToast(`Please upload at least one screenshot to "${targetBoard.title}" before copying!`, "error");
+      return;
+    }
+
+    if (isLimitReached) {
+      setShowLimitModal(true);
+      return;
+    }
+
+    setIsCopying(true);
+
+    try {
+      const nodesPayload = targetBoard.nodes.map((n) => ({
+        id: n.id,
+        x: n.position.x,
+        y: n.position.y,
+        width: n.width || 172,
+        height: n.height || 364,
+        isEmbed: Boolean((n as any).isEmbed || n.data?.isEmbed),
+        screenshotUrl: (n as any).screenshotUrl || n.data?.screenshotUrl,
+        deviceFrame: (n as any).deviceFrame || n.data?.deviceFrame,
+        frameColor: (n as any).frameColor || n.data?.frameColor,
+        tilt: (n as any).tilt || n.data?.tilt,
+        selected: n.selected || false,
+        zIndex: (n as any).zIndex || (n.selected ? 1000 : 0) + (Number(n.data?.customZIndex) || 0),
+      }));
+
+      const requestBody = {
+        title: targetBoard.title.trim() || "My App Mockup",
+        background: targetBoard.selectedBg,
+        customBgColor: targetBoard.customBgColor || null,
+        shadowIntensity: targetBoard.shadowIntensity,
+        paddingLevel: targetBoard.paddingLevel,
+        textOverlay: targetBoard.textOverlay ? targetBoard.textOverlay.trim() : null,
+        textPosition: targetBoard.textPosition,
+        textFontSize: targetBoard.textFontSize,
+        textColor: targetBoard.textColor || null,
+        textWeight: targetBoard.textWeight,
+        nodes: nodesPayload,
+        screenshotUrl: nodesPayload[0]?.screenshotUrl || null,
+        deviceFrame: nodesPayload[0]?.deviceFrame || null,
+        tilt: nodesPayload[0]?.tilt || null,
+      };
+
+      const res = await fetch("/api/mockups/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Export failed.");
+
+      setMockupsList([data.mockup, ...mockupsList]);
+      setUsageCount((prev) => prev + 1);
+
+      // Fetch PNG as a blob and copy to clipboard
+      const imageRes = await fetch(data.mockup.mockupUrl);
+      const blob = await imageRes.blob();
+
+      if (typeof navigator !== "undefined" && navigator.clipboard && typeof ClipboardItem !== "undefined") {
+        const item = new ClipboardItem({ [blob.type || "image/png"]: blob });
+        await navigator.clipboard.write([item]);
+        showToast("Mockup copied to clipboard! Paste directly into Slack, Figma, or X.", "success");
+      } else {
+        await handleDirectDownload(
+          data.mockup.mockupUrl,
+          `${targetBoard.title.replace(/\s+/g, "-").toLowerCase()}-mockup.png`
+        );
+        showToast("Clipboard image copy not supported by browser. Mockup downloaded!", "info");
+      }
+    } catch (err: any) {
+      console.error("[Clipboard Error]:", err);
+      showToast(err.message || "Failed to copy mockup image.", "error");
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
   const handleDeleteMockup = async (mockupId: string) => {
     if (!window.confirm("Are you sure you want to permanently delete this generated mockup?")) return;
 
@@ -1861,6 +2661,8 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl backdrop-blur-md border border-border-strong animate-slide-in ${
           toast.type === "success" 
             ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+            : toast.type === "info"
+            ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-400"
             : "bg-rose-500/10 border-rose-500/20 text-rose-400"
         }`}>
           <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
@@ -2114,6 +2916,33 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                   className="px-5 py-2.5 rounded-full border border-border-medium hover:bg-foreground/[0.04] text-xs font-black text-foreground-pure transition-all select-none cursor-pointer active:scale-95"
                 >
                   Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isCopying || isExporting}
+                  onClick={async () => {
+                    if (isLimitReached) {
+                      setShowLimitModal(true);
+                    } else {
+                      await handleCopyToClipboard();
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-xs font-black text-indigo-300 transition-all select-none cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  title="Copy PNG directly to clipboard"
+                >
+                  {isCopying ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin" />
+                      <span>Copying...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      <span>Copy to Clipboard</span>
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -2424,22 +3253,48 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                   {selectedNode ? (
                     <div className="flex flex-col gap-4">
                       {/* Active device frame */}
-                      <div className="flex flex-col gap-1.5 text-left">
+                      <div className="flex flex-col gap-2.5 text-left">
                         <label className="text-[10px] font-bold text-text-muted">Device Frame Model</label>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {DEVICE_FRAMES.map((d) => (
-                            <button
-                              key={d.id}
-                              onClick={() => updateSelectedNode("deviceFrame", d.id)}
-                              className={`py-2 px-2.5 rounded-xl border text-[10px] active:scale-[0.98] transition-all select-none cursor-pointer ${
-                                selectedNode.data.deviceFrame === d.id
-                                  ? "border-indigo-500 bg-indigo-500/5 text-foreground-pure font-bold"
-                                  : "border-border-medium bg-foreground/[0.01] hover:bg-foreground/[0.03] text-text-semi-muted"
-                              }`}
-                            >
-                              {d.name}
-                            </button>
-                          ))}
+
+                        {/* Desktop & Web category */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] font-bold text-text-dim uppercase tracking-wider">Desktop & Web</span>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {DEVICE_FRAMES.filter((d) => d.category === "Desktop").map((d) => (
+                              <button
+                                key={d.id}
+                                onClick={() => updateSelectedNode("deviceFrame", d.id)}
+                                className={`py-2 px-2.5 rounded-xl border text-[10px] active:scale-[0.98] transition-all select-none cursor-pointer flex items-center justify-between ${
+                                  selectedNode.data.deviceFrame === d.id
+                                    ? "border-indigo-500 bg-indigo-500/5 text-foreground-pure font-bold"
+                                    : "border-border-medium bg-foreground/[0.01] hover:bg-foreground/[0.03] text-text-semi-muted"
+                                }`}
+                              >
+                                <span>{d.name}</span>
+                                {d.id === "MacBook Pro" && <span className="text-[8px] opacity-60">16&quot;</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Smartphones category */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[9px] font-bold text-text-dim uppercase tracking-wider">Smartphones</span>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {DEVICE_FRAMES.filter((d) => d.category === "Mobile").map((d) => (
+                              <button
+                                key={d.id}
+                                onClick={() => updateSelectedNode("deviceFrame", d.id)}
+                                className={`py-2 px-2.5 rounded-xl border text-[10px] active:scale-[0.98] transition-all select-none cursor-pointer text-left ${
+                                  selectedNode.data.deviceFrame === d.id
+                                    ? "border-indigo-500 bg-indigo-500/5 text-foreground-pure font-bold"
+                                    : "border-border-medium bg-foreground/[0.01] hover:bg-foreground/[0.03] text-text-semi-muted"
+                                }`}
+                              >
+                                {d.name}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
@@ -2865,20 +3720,46 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                 )}
               </div>
 
-              <button
-                type="button"
-                disabled={nodes.length === 0}
-                onClick={() => setShowPreviewModal(true)}
-                className={`w-full font-extrabold text-xs py-3 rounded-2xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/5 text-foreground-pure transition-all active:scale-[0.98] select-none flex items-center justify-center gap-2 cursor-pointer mb-2.5 ${
-                  nodes.length === 0 ? "opacity-40 cursor-not-allowed" : ""
-                }`}
-              >
-                <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Preview Mockup Design
-              </button>
+              <div className="grid grid-cols-2 gap-2 mb-2.5">
+                <button
+                  type="button"
+                  disabled={nodes.length === 0}
+                  onClick={() => setShowPreviewModal(true)}
+                  className={`w-full font-extrabold text-xs py-3 rounded-2xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/5 text-foreground-pure transition-all active:scale-[0.98] select-none flex items-center justify-center gap-1.5 cursor-pointer ${
+                    nodes.length === 0 ? "opacity-40 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>Preview</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={nodes.length === 0 || isCopying || isExporting || isLimitReached}
+                  onClick={() => handleCopyToClipboard()}
+                  className={`w-full font-extrabold text-xs py-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 transition-all active:scale-[0.98] select-none flex items-center justify-center gap-1.5 cursor-pointer ${
+                    nodes.length === 0 || isLimitReached ? "opacity-40 cursor-not-allowed" : ""
+                  }`}
+                  title="Copy PNG directly to clipboard"
+                >
+                  {isCopying ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin" />
+                      <span>Copying...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      <span>Copy PNG</span>
+                    </>
+                  )}
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -3151,6 +4032,24 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
 
                       <div className="w-px h-4 bg-border-medium mx-1" />
 
+                      {/* Single Copy Action */}
+                      <button
+                        type="button"
+                        disabled={board.nodes.length === 0 || isCopying || isExporting}
+                        onClick={() => handleCopyToClipboard(board)}
+                        className={`p-1.5 rounded-lg border transition-all active:scale-95 cursor-pointer flex items-center gap-1 text-[10px] font-bold ${
+                          board.nodes.length === 0
+                            ? "bg-foreground/5 text-text-muted border-border-medium cursor-not-allowed"
+                            : "bg-indigo-500/5 border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/10 text-text-muted hover:text-indigo-400"
+                        }`}
+                        title="Copy PNG to Clipboard"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        <span className="hidden sm:inline">Copy</span>
+                      </button>
+
                       {/* Single Download Action */}
                       <button
                         type="button"
@@ -3170,6 +4069,147 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                       </button>
                     </div>
                   </div>
+
+                  {/* STUDIO POLISH TOOLBAR (Active Board Only) */}
+                  {isActive && (
+                    <div className="flex items-center justify-between flex-wrap gap-2 px-3.5 py-2 rounded-2xl bg-bg-card/90 backdrop-blur-md border border-border-subtle shadow-sm select-none">
+                      {/* 1. History Engine (Undo / Redo) */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={!canUndo}
+                          onClick={handleUndo}
+                          className="px-2.5 py-1.5 rounded-xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/10 text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5 text-[11px] font-bold"
+                          title="Undo (Ctrl+Z / Cmd+Z)"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a5 5 0 015 5v2a5 5 0 01-5 5H11" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M7 6L3 10l4 4" />
+                          </svg>
+                          <span className="hidden sm:inline">Undo</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={!canRedo}
+                          onClick={handleRedo}
+                          className="px-2.5 py-1.5 rounded-xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/10 text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5 text-[11px] font-bold"
+                          title="Redo (Ctrl+Y / Cmd+Shift+Z)"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a5 5 0 00-5 5v2a5 5 0 005 5h2" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 6l4 4-4 4" />
+                          </svg>
+                          <span className="hidden sm:inline">Redo</span>
+                        </button>
+                      </div>
+
+                      <div className="w-px h-4 bg-border-medium hidden md:block" />
+
+                      {/* 2. Smart Alignment & Distribution */}
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-text-dim mr-1 hidden lg:inline">Align:</span>
+                        
+                        <button
+                          type="button"
+                          disabled={nodes.length === 0}
+                          onClick={alignCenterH}
+                          className="p-1.5 rounded-xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/10 text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                          title="Center Horizontally (Canvas)"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M7 8h10M5 16h14" />
+                          </svg>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={nodes.length === 0}
+                          onClick={alignCenterV}
+                          className="p-1.5 rounded-xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/10 text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                          title="Center Vertically (Canvas)"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M8 7v10M16 5v14" />
+                          </svg>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={nodes.length < 2}
+                          onClick={alignTops}
+                          className="p-1.5 rounded-xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/10 text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                          title="Align Tops"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h16M7 8v10M17 8v6" />
+                          </svg>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={nodes.length < 2}
+                          onClick={alignBottoms}
+                          className="p-1.5 rounded-xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/10 text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                          title="Align Bottoms"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 20h16M7 16V6M17 16v-6" />
+                          </svg>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={nodes.length < 2}
+                          onClick={distributeEvenly}
+                          className="p-1.5 rounded-xl border border-border-medium hover:border-indigo-500/30 hover:bg-indigo-500/10 text-text-muted hover:text-foreground-pure transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                          title="Distribute Evenly Across Canvas"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v16M20 4v16M10 8v8M14 8v8" />
+                          </svg>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={nodes.length === 0}
+                          onClick={autoCascade}
+                          className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-indigo-500/10 to-pink-500/10 hover:from-indigo-500/20 hover:to-pink-500/20 border border-indigo-500/20 hover:border-indigo-500/30 text-indigo-300 font-extrabold text-[10px] uppercase tracking-wider flex items-center gap-1 active:scale-95 transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
+                          title="1-Click Auto Layout: Hero Centered, Isometric Duo, or Launch Trio"
+                        >
+                          <svg className="w-3 h-3 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          <span>Auto Cascade</span>
+                        </button>
+                      </div>
+
+                      <div className="w-px h-4 bg-border-medium hidden md:block" />
+
+                      {/* 3. Quick Copy to Clipboard */}
+                      <button
+                        type="button"
+                        disabled={nodes.length === 0 || isCopying || isExporting}
+                        onClick={() => handleCopyToClipboard()}
+                        className="px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-extrabold text-[11px] transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                        title="Copy PNG directly to clipboard"
+                      >
+                        {isCopying ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin" />
+                            <span>Copying...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            <span>Copy PNG</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Scaled Responsive Canvas aspect-[16/9] */}
                   <div 
@@ -3220,6 +4260,9 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
                               nodes={nodesWithZIndex}
                               onNodesChange={(changes) => {
                                 onNodesChange(changes);
+                              }}
+                              onNodeDragStart={() => {
+                                takeSnapshot();
                               }}
                               nodeTypes={nodeTypes}
                               snapToGrid={snapToGrid}

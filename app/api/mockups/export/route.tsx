@@ -37,6 +37,10 @@ const BACKEND_BG_STYLES = {
   forest: "radial-gradient(at 20% 0%, rgba(251, 146, 60, 0.5) 0px, transparent 50%), radial-gradient(at 80% 100%, rgba(16, 185, 129, 0.4) 0px, transparent 50%), #0d1e1a",
 };
 
+const isDesktopFrame = (frameId?: string | null) => {
+  return frameId === "MacBook Pro" || frameId === "Safari Browser" || frameId === "Chrome Browser";
+};
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate user session
@@ -83,11 +87,17 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      const isDesktop = isDesktopFrame(deviceFrame);
+      const defaultW = isDesktop ? 480 : 172;
+      const defaultH = deviceFrame === "MacBook Pro" ? 320 : isDesktop ? 310 : 364;
+
       canvasNodes = [
         {
           id: "node-legacy",
-          x: 514, // (1200 - 172) / 2
-          y: 155, // (675 - 364) / 2
+          x: Math.round((1200 - defaultW) / 2),
+          y: Math.round((675 - defaultH) / 2),
+          width: defaultW,
+          height: defaultH,
           screenshotUrl: fallbackUrl,
           deviceFrame: deviceFrame || "iPhone 15 Pro",
           frameColor: "Dark",
@@ -223,10 +233,13 @@ export async function POST(request: NextRequest) {
     let maxY = -Infinity;
 
     for (const node of fetchedNodes) {
+      const isDesktop = isDesktopFrame(node.deviceFrame);
+      const defaultW = isDesktop ? 480 : 172;
+      const defaultH = node.deviceFrame === "MacBook Pro" ? 320 : isDesktop ? 310 : 364;
       const x = node.x ?? 0;
       const y = node.y ?? 0;
-      const w = node.width ?? 172; // Custom resized device width
-      const h = node.height ?? 364; // Custom resized device height
+      const w = node.width ?? defaultW; // Custom resized device width
+      const h = node.height ?? defaultH; // Custom resized device height
 
       if (x < minX) minX = x;
       if (x + w > maxX) maxX = x + w;
@@ -542,6 +555,416 @@ export async function POST(request: NextRequest) {
               return null;
             };
 
+            const isDesktop = isDesktopFrame(node.deviceFrame);
+            const defaultW = isDesktop ? 480 : 172;
+            const defaultH = node.deviceFrame === "MacBook Pro" ? 320 : isDesktop ? 310 : 364;
+            const nodeWidth = node.width ?? defaultW;
+            const nodeHeight = node.height ?? defaultH;
+
+            // 1. Safari macOS Browser in Satori
+            if (node.deviceFrame === "Safari Browser") {
+              return (
+                <div
+                  key={node.id}
+                  style={{
+                    position: "absolute",
+                    left: `${shiftedX}px`,
+                    top: `${shiftedY}px`,
+                    width: `${nodeWidth}px`,
+                    height: `${nodeHeight}px`,
+                    display: "flex",
+                    flexDirection: "column",
+                    transform: satoriTransform,
+                    borderRadius: "16px",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    backgroundColor: "#161822",
+                    overflow: "hidden",
+                    boxShadow: shadowStyle,
+                    zIndex: 10,
+                  }}
+                >
+                  {/* Safari Window Header Bar */}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "32px",
+                      backgroundColor: "#1f2230",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                      padding: "0 12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", width: "60px" }}>
+                      <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#ff5f56", border: "1px solid #e0443e" }} />
+                      <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#ffbd2e", border: "1px solid #dea123" }} />
+                      <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#27c93f", border: "1px solid #1aab29" }} />
+                    </div>
+                    {/* Address pill */}
+                    <div
+                      style={{
+                        backgroundColor: "rgba(0, 0, 0, 0.35)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "6px",
+                        height: "20px",
+                        padding: "0 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <span style={{ fontSize: "9px", color: "rgba(255, 255, 255, 0.5)", fontWeight: 500 }}>mockly.app</span>
+                    </div>
+                    <div style={{ width: "60px" }} />
+                  </div>
+
+                  {/* Screen viewport */}
+                  <div
+                    style={{
+                      width: "100%",
+                      flex: 1,
+                      display: "flex",
+                      position: "relative",
+                      backgroundColor: "#0c0d12",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {node.base64 ? (
+                      <img
+                        src={node.base64}
+                        alt="Screenshot"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          position: "absolute",
+                          zIndex: 10,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "#0c0d12",
+                          position: "absolute",
+                          zIndex: 10,
+                        }}
+                      >
+                        <span style={{ fontSize: "10px", fontWeight: "bold", color: "rgba(255,255,255,0.4)" }}>NO ASSET</span>
+                      </div>
+                    )}
+                    {/* Premium Glare Overlay */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 35%, rgba(255,255,255,0) 65%)",
+                        zIndex: 20,
+                        opacity: 0.8,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            }
+
+            // 2. Google Chrome Window in Satori
+            if (node.deviceFrame === "Chrome Browser") {
+              return (
+                <div
+                  key={node.id}
+                  style={{
+                    position: "absolute",
+                    left: `${shiftedX}px`,
+                    top: `${shiftedY}px`,
+                    width: `${nodeWidth}px`,
+                    height: `${nodeHeight}px`,
+                    display: "flex",
+                    flexDirection: "column",
+                    transform: satoriTransform,
+                    borderRadius: "14px",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    backgroundColor: "#1e1f26",
+                    overflow: "hidden",
+                    boxShadow: shadowStyle,
+                    zIndex: 10,
+                  }}
+                >
+                  {/* Chrome Tab Bar */}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "28px",
+                      backgroundColor: "#16171d",
+                      padding: "0 10px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <div style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#ff5f56", border: "1px solid #e0443e" }} />
+                      <div style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#ffbd2e", border: "1px solid #dea123" }} />
+                      <div style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#27c93f", border: "1px solid #1aab29" }} />
+                    </div>
+                    {/* Active tab */}
+                    <div
+                      style={{
+                        marginLeft: "12px",
+                        backgroundColor: "#1e1f26",
+                        borderTopLeftRadius: "6px",
+                        borderTopRightRadius: "6px",
+                        borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderLeft: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRight: "1px solid rgba(255, 255, 255, 0.1)",
+                        padding: "3px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <div style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: "#6366f1" }} />
+                      <span style={{ fontSize: "9px", color: "#ffffff", fontWeight: 500 }}>Mockly App</span>
+                    </div>
+                  </div>
+
+                  {/* Chrome Omnibox Sub-bar */}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "26px",
+                      backgroundColor: "#1e1f26",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                      padding: "0 10px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        flex: 1,
+                        height: "18px",
+                        backgroundColor: "rgba(0, 0, 0, 0.35)",
+                        border: "1px solid rgba(255, 255, 255, 0.06)",
+                        borderRadius: "9px",
+                        padding: "0 10px",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span style={{ fontSize: "8px", color: "rgba(255, 255, 255, 0.5)", fontWeight: 500 }}>https://mockly.app</span>
+                    </div>
+                  </div>
+
+                  {/* Screen viewport */}
+                  <div
+                    style={{
+                      width: "100%",
+                      flex: 1,
+                      display: "flex",
+                      position: "relative",
+                      backgroundColor: "#0c0d12",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {node.base64 ? (
+                      <img
+                        src={node.base64}
+                        alt="Screenshot"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          position: "absolute",
+                          zIndex: 10,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "#0c0d12",
+                          position: "absolute",
+                          zIndex: 10,
+                        }}
+                      >
+                        <span style={{ fontSize: "10px", fontWeight: "bold", color: "rgba(255,255,255,0.4)" }}>NO ASSET</span>
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 35%, rgba(255,255,255,0) 65%)",
+                        zIndex: 20,
+                        opacity: 0.8,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            }
+
+            // 3. MacBook Pro 16" in Satori
+            if (node.deviceFrame === "MacBook Pro") {
+              return (
+                <div
+                  key={node.id}
+                  style={{
+                    position: "absolute",
+                    left: `${shiftedX}px`,
+                    top: `${shiftedY}px`,
+                    width: `${nodeWidth}px`,
+                    height: `${nodeHeight}px`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    transform: satoriTransform,
+                    zIndex: 10,
+                  }}
+                >
+                  {/* MacBook Display Lid */}
+                  <div
+                    style={{
+                      width: "100%",
+                      flex: 1,
+                      borderTopLeftRadius: "14px",
+                      borderTopRightRadius: "14px",
+                      borderBottomLeftRadius: "4px",
+                      borderBottomRightRadius: "4px",
+                      border: `6px solid ${outerBezelBorder}`,
+                      backgroundColor: middleBezelBg,
+                      display: "flex",
+                      position: "relative",
+                      overflow: "hidden",
+                      boxShadow: shadowStyle,
+                    }}
+                  >
+                    {/* Notch Camera */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: "36px",
+                        height: "9px",
+                        backgroundColor: "#000000",
+                        borderBottomLeftRadius: "5px",
+                        borderBottomRightRadius: "5px",
+                        zIndex: 30,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "4px",
+                          height: "4px",
+                          borderRadius: "50%",
+                          backgroundColor: "#1e3a8a",
+                        }}
+                      />
+                    </div>
+
+                    {/* Screen Viewport */}
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "3px",
+                        backgroundColor: "#0c0d12",
+                        display: "flex",
+                        position: "relative",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {node.base64 ? (
+                        <img
+                          src={node.base64}
+                          alt="Screenshot"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            position: "absolute",
+                            zIndex: 10,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: "#0c0d12",
+                            position: "absolute",
+                            zIndex: 10,
+                          }}
+                        >
+                          <span style={{ fontSize: "10px", fontWeight: "bold", color: "rgba(255,255,255,0.4)" }}>NO ASSET</span>
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: "linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 32%, rgba(255,255,255,0) 65%)",
+                          zIndex: 20,
+                          opacity: 0.8,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* MacBook Aluminum Lower Lip */}
+                  <div
+                    style={{
+                      width: "104%",
+                      height: "12px",
+                      borderBottomLeftRadius: "8px",
+                      borderBottomRightRadius: "8px",
+                      backgroundColor: buttonsColor,
+                      display: "flex",
+                      justifyContent: "center",
+                      position: "relative",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "52px",
+                        height: "3.5px",
+                        backgroundColor: "#090a0f",
+                        borderBottomLeftRadius: "2px",
+                        borderBottomRightRadius: "2px",
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            }
+
+            // 4. Smartphone Frames in Satori (Default)
             return (
               <div
                 key={node.id}
@@ -549,8 +972,8 @@ export async function POST(request: NextRequest) {
                   position: "absolute",
                   left: `${shiftedX}px`,
                   top: `${shiftedY}px`,
-                  width: `${node.width ?? 172}px`,
-                  height: `${node.height ?? 364}px`,
+                  width: `${nodeWidth}px`,
+                  height: `${nodeHeight}px`,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
