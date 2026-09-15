@@ -140,11 +140,14 @@ export async function POST(request: NextRequest) {
 
         // Transaction to ensure atomic consistency
         await db.transaction(async (tx) => {
-          // A. Downgrade user plan back to "free"
-          await tx
-            .update(user)
-            .set({ plan: "free" })
-            .where(eq(user.id, userId));
+          // A. Downgrade user plan back to "free" (unless admin)
+          const targetUser = await tx.query.user.findFirst({ where: eq(user.id, userId) });
+          if (targetUser?.role !== "admin") {
+            await tx
+              .update(user)
+              .set({ plan: "free" })
+              .where(eq(user.id, userId));
+          }
 
           // B. Update subscription record status
           await tx

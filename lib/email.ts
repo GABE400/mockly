@@ -71,7 +71,11 @@ export async function sendEmail({
 }) {
   try {
     const client = await getTransporter();
-    const from = process.env.SMTP_FROM || '"Muckly Support" <noreply@muckly.io>';
+    let from = process.env.SMTP_FROM || '"Muckly Support" <noreply@muckly.io>';
+    // If SMTP_FROM was parsed without angle brackets or email address, append SMTP_USER safely
+    if (!from.includes("<") && process.env.SMTP_USER) {
+      from = `"${from.replace(/"/g, "")}" <${process.env.SMTP_USER}>`;
+    }
     const info = await client.sendMail({
       from,
       to,

@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { mockups } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
+import { imagekit } from "@/lib/imagekit";
+import path from "path";
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -43,6 +45,30 @@ export async function DELETE(request: NextRequest) {
         { error: "Mockup not found or access denied." },
         { status: 404 }
       );
+    }
+
+    // 4. Delete the hosted asset from ImageKit CDN storage if present
+    if (existingMockup.mockupUrl) {
+      try {
+        const urlObj = new URL(existingMockup.mockupUrl);
+        const fileName = path.basename(urlObj.pathname);
+        if (fileName) {
+          const files = await imagekit.listFiles({
+            name: fileName,
+            path: `/mockly/mockups/${user.id}`,
+          });
+
+          if (Array.isArray(files) && files.length > 0) {
+            const fileItem = files[0];
+            if ("fileId" in fileItem && fileItem.fileId) {
+              await imagekit.deleteFile(fileItem.fileId);
+            }
+          }
+        }
+      } catch (cdnError) {
+        console.warn("[Mockup Delete] Failed to delete ImageKit CDN asset:", cdnError);
+        // Continue with database deletion so user is not blocked
+      }
     }
 
     await db

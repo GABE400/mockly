@@ -7,8 +7,9 @@ import { user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
-const CACHE_FILE = path.join(process.cwd(), ".next", "figma-cache.json");
+const CACHE_FILE = path.join(os.tmpdir(), "mockly-figma-cache.json");
 
 interface CacheEntry {
   url: string;

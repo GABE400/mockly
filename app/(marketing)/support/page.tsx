@@ -11,7 +11,7 @@ export default function SupportPage() {
 
 
   return (
-    <div className="min-h-screen bg-bg-app text-foreground font-dm-sans selection:bg-indigo-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground font-dm-sans selection:bg-indigo-500/30 overflow-x-hidden">
       
       {/* Background Gradients & Aura */}
       <div className="absolute top-[-10%] left-[-20%] w-[80%] h-[60%] rounded-full bg-indigo-500/10 blur-[150px] -z-10 pointer-events-none" />

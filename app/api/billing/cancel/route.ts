@@ -48,24 +48,21 @@ export async function POST(request: NextRequest) {
       // Fall through to ensure user can at least clear local state if API is in test mode or placeholder
     }
 
-    // 4. Update Neon database state immediately to ensure smooth UX
-    await db.transaction(async (tx) => {
-      // A. Downgrade user back to "free" tier
-      await tx
-        .update(user)
-        .set({ plan: "free" })
-        .where(eq(user.id, userId));
+    // 4. Mark subscription as pending cancellation while preserving user's plan until period ends
+    await db
+      .update(subscriptions)
+      .set({ status: "pending_cancellation" })
+      .where(eq(subscriptions.id, activeSub.id));
 
-      // B. Mark subscription as cancelled in the DB
-      await tx
-        .update(subscriptions)
-        .set({ status: "cancelled" })
-        .where(eq(subscriptions.id, activeSub.id));
+    const formattedDate = new Date(activeSub.currentPeriodEnd).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
     return NextResponse.json({
       success: true,
-      message: "Subscription successfully cancelled. Your account has been downgraded to the Free tier.",
+      message: `Subscription auto-renewal has been cancelled. You will continue to enjoy your ${activeSub.plan === "pro" ? "Pro" : "Starter"} features until ${formattedDate}.`,
     });
   } catch (error: any) {
     console.error("Error cancelling subscription:", error);

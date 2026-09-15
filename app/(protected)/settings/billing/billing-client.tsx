@@ -46,7 +46,7 @@ export function BillingClient({ plan, status, currentPeriodEnd, usageCount }: Bi
   };
 
   const handleCancel = async () => {
-    if (!confirm("Are you sure you want to cancel your Muckly subscription? You will lose higher export limits and premium features immediately.")) {
+    if (!confirm("Are you sure you want to cancel auto-renewal? You will keep full access to your paid features until the end of your current billing period.")) {
       return;
     }
 
@@ -137,16 +137,24 @@ export function BillingClient({ plan, status, currentPeriodEnd, usageCount }: Bi
             <span className={`font-bold uppercase tracking-wider text-[10px] px-2.5 py-0.5 rounded-full ${
               plan !== "free" && status === "active"
                 ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
-                : plan !== "free"
+                : status === "pending_cancellation"
                   ? "bg-amber-500/10 border border-amber-500/20 text-amber-400"
-                  : "bg-foreground/[0.04] border border-border-medium text-text-muted"
+                  : plan !== "free"
+                    ? "bg-amber-500/10 border border-amber-500/20 text-amber-400"
+                    : "bg-foreground/[0.04] border border-border-medium text-text-muted"
             }`}>
-              {plan !== "free" ? status || "active" : "free"}
+              {status === "pending_cancellation"
+                ? "Pending Cancellation"
+                : plan !== "free"
+                ? status || "active"
+                : "free"}
             </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-text-muted font-medium">Next Renewal / Billing Date</span>
+            <span className="text-text-muted font-medium">
+              {status === "pending_cancellation" ? "Access Valid Until" : "Next Renewal / Billing Date"}
+            </span>
             <span className="font-semibold text-foreground-pure">{plan !== "free" ? formattedDate : "N/A"}</span>
           </div>
 
@@ -156,6 +164,12 @@ export function BillingClient({ plan, status, currentPeriodEnd, usageCount }: Bi
               {plan === "pro" ? "Unlimited (∞)" : plan === "starter" ? `${usageCount} / 30 used` : `${usageCount} / 5 used`}
             </span>
           </div>
+
+          {status === "pending_cancellation" && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 leading-relaxed">
+              Your subscription auto-renewal has been cancelled. You retain full access to your {plan === "pro" ? "Pro" : "Starter"} features until {formattedDate}.
+            </div>
+          )}
         </div>
 
         {/* Dynamic Upgrade / Cancel Button Action Area */}
@@ -166,7 +180,7 @@ export function BillingClient({ plan, status, currentPeriodEnd, usageCount }: Bi
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              {plan === "starter" && (
+              {plan === "starter" && status !== "pending_cancellation" && (
                 <button
                   onClick={() => handleUpgrade("pro", "monthly")}
                   disabled={isLoading}
@@ -184,22 +198,24 @@ export function BillingClient({ plan, status, currentPeriodEnd, usageCount }: Bi
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
-                Update Payment Details
+                Customer Portal
               </a>
-              <button
-                onClick={handleCancel}
-                disabled={isLoading}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs font-bold bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 active:scale-95 transition-all text-rose-400 rounded-full px-6 py-3 disabled:opacity-50 cursor-pointer select-none"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Cancel Subscription"
-                )}
-              </button>
+              {status !== "pending_cancellation" && (
+                <button
+                  onClick={handleCancel}
+                  disabled={isLoading}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs font-bold bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 active:scale-95 transition-all text-rose-400 rounded-full px-6 py-3 disabled:opacity-50 cursor-pointer select-none"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Cancel Auto-Renewal"
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>

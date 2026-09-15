@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-export default function SignUpPage() {
+function SignUpContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planParam = searchParams.get("plan");
+  const periodParam = searchParams.get("period");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +19,23 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ plan: string; period: string } | null>(null);
+
+  // Read and persist checkout intent from query parameters
+  useEffect(() => {
+    if (planParam && (planParam === "starter" || planParam === "pro")) {
+      const planInfo = {
+        plan: planParam,
+        period: periodParam === "annual" ? "annual" : "monthly",
+      };
+      setSelectedPlan(planInfo);
+      try {
+        localStorage.setItem("mockly_pending_checkout", JSON.stringify(planInfo));
+      } catch (e) {
+        console.error("Failed to store pending checkout in localStorage:", e);
+      }
+    }
+  }, [planParam, periodParam]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +79,11 @@ export default function SignUpPage() {
     setIsLoading(true);
     setError(null);
     try {
+      if (selectedPlan) {
+        try {
+          localStorage.setItem("mockly_pending_checkout", JSON.stringify(selectedPlan));
+        } catch (e) {}
+      }
       await authClient.signIn.social({
         provider: "google",
         callbackURL: "/onboarding",
@@ -111,10 +136,16 @@ export default function SignUpPage() {
               Muckly
             </span>
           </Link>
-          <h2 className="text-xl font-bold text-foreground-pure">Create your free account</h2>
+          <h2 className="text-xl font-bold text-foreground-pure">Create your account</h2>
           <p className="text-xs text-text-muted mt-1.5">
             Turn your raw mobile app screenshots into stunning presentations.
           </p>
+          {selectedPlan && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-1 text-xs font-bold text-indigo-400 animate-fade-in">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+              <span>Selected Tier: {selectedPlan.plan === "pro" ? "Pro Plan" : "Starter Plan"} ({selectedPlan.period === "annual" ? "Annual" : "Monthly"})</span>
+            </div>
+          )}
         </div>
 
         {/* Card */}
@@ -297,5 +328,21 @@ export default function SignUpPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="relative min-h-screen bg-background text-foreground flex items-center justify-center py-16 px-6">
+          <div className="w-full max-w-md border border-border-medium bg-bg-card backdrop-blur-md rounded-3xl p-8 shadow-2xl flex items-center justify-center py-12 text-sm text-text-muted">
+            Loading sign-up form...
+          </div>
+        </div>
+      }
+    >
+      <SignUpContent />
+    </Suspense>
   );
 }

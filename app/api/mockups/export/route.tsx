@@ -96,6 +96,24 @@ export async function POST(request: NextRequest) {
       ];
     }
 
+    // Check for unrendered live Figma embed nodes
+    const hasUnrenderedEmbed = canvasNodes.some((n: any) => Boolean(n.isEmbed) && !n.screenshotUrl);
+    if (hasUnrenderedEmbed) {
+      return NextResponse.json(
+        { error: "Cannot export canvas containing live Figma embeds without static screenshots. Please sync frames as images first." },
+        { status: 400 }
+      );
+    }
+
+    // Ensure at least one valid screenshot is present on the canvas
+    const hasValidScreenshot = canvasNodes.some((n: any) => Boolean(n.screenshotUrl));
+    if (!hasValidScreenshot) {
+      return NextResponse.json(
+        { error: "Cannot export an empty canvas. Please add at least one screenshot asset before exporting." },
+        { status: 400 }
+      );
+    }
+
     // 3. Enforce monthly export quota (Free: 5 exports/mo, Starter: 30 exports/mo, Pro: Unlimited)
     const startOfMonth = new Date();
     startOfMonth.setDate(1);

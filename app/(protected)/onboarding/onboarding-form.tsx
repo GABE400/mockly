@@ -70,7 +70,52 @@ export default function OnboardingForm({ userName, initialAnswers }: OnboardingF
     }
   };
 
-  const handleGoToDashboard = () => {
+  const [pendingPlan, setPendingPlan] = useState<{ plan: string; period: string } | null>(null);
+  const [isRedirectingToCheckout, setIsRedirectingToCheckout] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("mockly_pending_checkout");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.plan === "starter" || parsed.plan === "pro") {
+          setPendingPlan(parsed);
+        }
+      }
+    } catch (e) {
+      console.error("Error reading pending plan from localStorage:", e);
+    }
+  }, []);
+
+  const handleGoToDashboard = async () => {
+    if (pendingPlan) {
+      setIsRedirectingToCheckout(true);
+      try {
+        const res = await fetch("/api/billing/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            plan: pendingPlan.plan,
+            billingPeriod: pendingPlan.period,
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.checkoutUrl) {
+          localStorage.removeItem("mockly_pending_checkout");
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to redirect to checkout session:", err);
+      } finally {
+        setIsRedirectingToCheckout(false);
+      }
+    }
+
+    try {
+      localStorage.removeItem("mockly_pending_checkout");
+    } catch (e) {}
     router.push("/dashboard");
   };
 
@@ -240,9 +285,14 @@ export default function OnboardingForm({ userName, initialAnswers }: OnboardingF
             <button
               type="button"
               onClick={handleGoToDashboard}
-              className="w-full mt-4 inline-flex items-center justify-center py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:opacity-95 hover:scale-[1.01] active:scale-[0.98] text-sm font-extrabold shadow-[0_8px_30px_rgba(99,102,241,0.25)] hover:shadow-[0_12px_40px_rgba(99,102,241,0.4)] transition-all duration-300 cursor-pointer"
+              disabled={isRedirectingToCheckout}
+              className="w-full mt-4 inline-flex items-center justify-center py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:opacity-95 hover:scale-[1.01] active:scale-[0.98] text-sm font-extrabold shadow-[0_8px_30px_rgba(99,102,241,0.25)] hover:shadow-[0_12px_40px_rgba(99,102,241,0.4)] transition-all duration-300 cursor-pointer disabled:opacity-60"
             >
-              Go to Dashboard
+              {isRedirectingToCheckout
+                ? "Connecting to Secure Checkout..."
+                : pendingPlan
+                ? `Continue to ${pendingPlan.plan === "pro" ? "Pro" : "Starter"} Checkout`
+                : "Go to Dashboard"}
             </button>
           </div>
         )}

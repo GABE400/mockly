@@ -1704,6 +1704,22 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
       return;
     }
 
+    const hasLiveEmbed = targetBoard.nodes.some(
+      (n) => Boolean((n as any).isEmbed || n.data?.isEmbed) && !((n as any).screenshotUrl || n.data?.screenshotUrl)
+    );
+    if (hasLiveEmbed) {
+      showToast('Live Figma embeds cannot be directly exported as static PNGs. Please click "Sync as Image" in the Figma tab or upload a static screenshot before exporting.', "error");
+      return;
+    }
+
+    const hasAnyScreenshot = targetBoard.nodes.some(
+      (n) => Boolean((n as any).screenshotUrl || n.data?.screenshotUrl)
+    );
+    if (!hasAnyScreenshot) {
+      showToast(`Please upload at least one screenshot to "${targetBoard.title}" before exporting!`, "error");
+      return;
+    }
+
     if (isLimitReached) {
       setShowLimitModal(true);
       return;
@@ -1719,6 +1735,7 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
         y: n.position.y,
         width: n.width || 172,
         height: n.height || 364,
+        isEmbed: Boolean((n as any).isEmbed || n.data?.isEmbed),
         screenshotUrl: (n as any).screenshotUrl || n.data?.screenshotUrl,
         deviceFrame: (n as any).deviceFrame || n.data?.deviceFrame,
         frameColor: (n as any).frameColor || n.data?.frameColor,
@@ -1785,6 +1802,14 @@ export function MockupBuilder({ plan, initialUsage, initialMockups, userRole = "
     const validBoards = boards.filter((b) => b.nodes.length > 0);
     if (validBoards.length === 0) {
       showToast("None of your boards contain screenshots. Please add assets before exporting!", "error");
+      return;
+    }
+
+    const hasAnyLiveEmbed = validBoards.some((b) =>
+      b.nodes.some((n) => Boolean((n as any).isEmbed || n.data?.isEmbed) && !((n as any).screenshotUrl || n.data?.screenshotUrl))
+    );
+    if (hasAnyLiveEmbed) {
+      showToast('One or more slides contain Live Figma embeds. Please click "Sync as Image" or upload static screenshots before bulk exporting.', "error");
       return;
     }
 
